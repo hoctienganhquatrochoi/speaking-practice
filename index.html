@@ -158,19 +158,18 @@
     <h2>Nộp bài mới</h2>
 
     <div class="hidden" id="assignmentBlock">
-      <label>📋 Hoàn thành nội dung các bài sau</label>
-      <select id="assignmentSelect" onchange="onAssignmentChange()">
-        <option value="">-- Không theo bài giao, tự chọn luyện tập --</option>
-      </select>
+      <label>📋 Các bài tập cần hoàn thành</label>
+      <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
+      <p class="muted" style="margin-top:6px;"><a href="#" onclick="toggleFreeMode(true);return false;" style="color:#9db4ff;">Không làm theo bài giao, tự chọn nội dung khác luyện tập »</a></p>
     </div>
 
     <div id="freePracticeBlock" style="margin-top:16px;">
-      <label id="freePracticeLabel">Con đang luyện gì? Hãy chọn chủ đề luyện tập</label>
+      <label id="freePracticeLabel">Chọn nội dung cần luyện tập:</label>
       <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
         <optgroup label="Luyện tập" id="freeOptgroupGeneral">
-          <option value="presentation">Tự chọn chủ đề để nói</option>
-          <option value="vocabulary">Đọc từ vựng</option>
-          <option value="reading">Luyện đọc theo bài</option>
+          <option value="presentation">Thuyết trình theo tranh</option>
+          <option value="vocabulary">Luyện từ vựng</option>
+          <option value="reading">Luyện đọc</option>
         </optgroup>
         <optgroup label="IELTS" id="freeOptgroupIelts">
           <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
@@ -178,6 +177,7 @@
           <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
         </optgroup>
       </select>
+      <p class="muted hidden" id="backToAssignmentLink" style="margin-top:6px;"><a href="#" onclick="toggleFreeMode(false);return false;" style="color:#9db4ff;">« Quay lại làm theo bài giao</a></p>
 
       <div id="freeImageBlock" style="margin-top:12px;">
         <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, ảnh danh sách từ vựng, hoặc ảnh Cue Card)</label>
@@ -387,6 +387,7 @@ function saveNewPassword() {
 // ASSIGNMENTS
 // =====================================================
 var submittedAssignmentIds = {};
+var useFreeMode = false;
 
 function loadAssignments() {
   if (!currentStudent.class_id) return;
@@ -403,40 +404,62 @@ function loadAssignments() {
 function renderAssignmentDropdown() {
   var sel = document.getElementById('assignmentSelect');
   var currentValue = sel.value;
-  var html = '<option value="">-- Không theo bài giao, tự chọn luyện tập --</option>';
+  var html = '';
   for (var i = 0; i < currentAssignments.length; i++) {
     var a = currentAssignments[i];
     var doneMark = submittedAssignmentIds[a.id] ? ' ✅ Đã nộp' : '';
     html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + doneMark + '</option>';
   }
   sel.innerHTML = html;
-  if (currentValue) sel.value = currentValue;
-  var block = document.getElementById('assignmentBlock');
-  if (currentAssignments.length > 0) block.classList.remove('hidden');
-  else block.classList.add('hidden');
-  onAssignmentChange();
+  // giữ lại lựa chọn cũ nếu còn hợp lệ, không thì mặc định bài giao mới nhất (đầu danh sách)
+  if (currentValue && html.indexOf('value="' + currentValue + '"') !== -1) {
+    sel.value = currentValue;
+  } else if (currentAssignments.length > 0) {
+    sel.value = currentAssignments[0].id;
+  }
+  applyModeVisibility();
+}
+
+function toggleFreeMode(toFree) {
+  useFreeMode = toFree;
+  applyModeVisibility();
+}
+
+function applyModeVisibility() {
+  var assignmentBlock = document.getElementById('assignmentBlock');
+  var freePracticeBlock = document.getElementById('freePracticeBlock');
+  var backLink = document.getElementById('backToAssignmentLink');
+  var hasAssignments = currentAssignments.length > 0;
+
+  if (hasAssignments && !useFreeMode) {
+    assignmentBlock.classList.remove('hidden');
+    freePracticeBlock.classList.add('hidden');
+    renderAssignmentPreview();
+  } else {
+    assignmentBlock.classList.add('hidden');
+    freePracticeBlock.classList.remove('hidden');
+    backLink.classList.toggle('hidden', !hasAssignments);
+    clearAssignmentPreview();
+    applyAudienceToFreePractice();
+    onFreePracticeTypeChange();
+  }
 }
 
 function onAssignmentChange() {
+  renderAssignmentPreview();
+}
+
+function clearAssignmentPreview() {
+  document.getElementById('assignmentDescriptionPreview').classList.add('hidden');
+  document.getElementById('assignmentImagePreview').classList.add('hidden');
+  document.getElementById('readingTextPreview').classList.add('hidden');
+}
+
+function renderAssignmentPreview() {
   var assignmentId = document.getElementById('assignmentSelect').value;
-  var freePracticeBlock = document.getElementById('freePracticeBlock');
   var descBlock = document.getElementById('assignmentDescriptionPreview');
   var previewBlock = document.getElementById('assignmentImagePreview');
   var readingBlock = document.getElementById('readingTextPreview');
-
-  if (!assignmentId) {
-    // Bài tự do -> cho học sinh chọn loại luyện tập
-    freePracticeBlock.classList.remove('hidden');
-    descBlock.classList.add('hidden');
-    previewBlock.classList.add('hidden');
-    readingBlock.classList.add('hidden');
-    applyAudienceToFreePractice();
-    onFreePracticeTypeChange();
-    return;
-  }
-
-  // Có bài giao -> ẩn hẳn khối chọn loại tự do, dùng loại đã định nghĩa trong bài giao
-  freePracticeBlock.classList.add('hidden');
 
   var chosen = null;
   for (var i = 0; i < currentAssignments.length; i++) {
@@ -480,7 +503,7 @@ function applyAudienceToFreePractice() {
   generalGroup.style.display = isIelts ? 'none' : '';
   ieltsGroup.style.display = isIelts ? '' : 'none';
   sel.value = isIelts ? 'ielts_part2' : 'presentation';
-  label.textContent = isIelts ? 'Bạn đang luyện phần nào?' : 'Con đang luyện gì?';
+  label.textContent = isIelts ? 'Chọn phần IELTS cần luyện tập:' : 'Chọn nội dung cần luyện tập:';
 }
 
 function onFreePracticeTypeChange() {
@@ -681,10 +704,10 @@ function onFileSelected() {
 
 function submitVideo() {
   if (!selectedFile) { showToast('Chưa có bản ghi âm nào'); return; }
-  var assignmentId = document.getElementById('assignmentSelect').value || null;
-  var practiceType = assignmentId ? null : document.getElementById('freePracticeType').value;
+  var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
+  var practiceType = useFreeMode ? document.getElementById('freePracticeType').value : null;
   var needsTextCapture = practiceType === 'reading' || practiceType === 'ielts_part1' || practiceType === 'ielts_part3';
-  var freeReadingText = (!assignmentId && needsTextCapture)
+  var freeReadingText = (useFreeMode && needsTextCapture)
     ? document.getElementById('freeReadingTextInput').value.trim()
     : null;
   var statusEl = document.getElementById('uploadStatus');
