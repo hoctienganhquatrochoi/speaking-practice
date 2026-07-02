@@ -470,6 +470,7 @@ function applyModeVisibility() {
     freePracticeBlock.classList.add('hidden');
     renderAssignmentPreview();
   } else {
+    useFreeMode = true; // đảm bảo cờ luôn khớp với giao diện đang hiện, kể cả khi không có bài giao nào
     assignmentBlock.classList.add('hidden');
     freePracticeBlock.classList.remove('hidden');
     backLink.classList.toggle('hidden', !hasAssignments);
