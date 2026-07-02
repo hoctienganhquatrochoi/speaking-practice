@@ -265,9 +265,19 @@
   <!-- TAB: ASSIGNMENTS -->
   <div id="tabAssignments" class="hidden">
     <div class="card">
-      <h2>Chọn lớp</h2>
-      <select id="assignmentClassSelect" onchange="onAssignmentClassChange()"></select>
+      <h2>Chọn khối</h2>
+      <select id="assignmentAudienceSelect" onchange="onAssignmentAudienceChange()">
+        <option value="elementary">Tiểu học</option>
+        <option value="middle">Cấp 2</option>
+        <option value="high">Cấp 3</option>
+        <option value="ielts">IELTS</option>
+      </select>
       <p class="muted" id="assignmentClassAudienceNote" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="card">
+      <h2>Chọn lớp áp dụng (tick 1 hoặc nhiều lớp trong khối này)</h2>
+      <div id="assignmentClassCheckboxes"></div>
     </div>
 
     <div class="card">
@@ -498,7 +508,14 @@ function renderClasses() {
     html += '<tr>';
     html += '<td>' + escapeHtml(c.name) + '</td>';
     html += '<td>' + escapeHtml(c.curriculum || '-') + '</td>';
-    html += '<td><span class="pill">' + audienceLevelLabel(c.audience_level) + '</span></td>';
+    html += '<td>';
+    html += '<select onchange="updateClassAudience(\'' + c.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
+    html += '<option value="elementary"' + (c.audience_level === 'elementary' || !c.audience_level ? ' selected' : '') + '>Tiểu học</option>';
+    html += '<option value="middle"' + (c.audience_level === 'middle' ? ' selected' : '') + '>Cấp 2</option>';
+    html += '<option value="high"' + (c.audience_level === 'high' ? ' selected' : '') + '>Cấp 3</option>';
+    html += '<option value="ielts"' + (c.audience_level === 'ielts' ? ' selected' : '') + '>IELTS</option>';
+    html += '</select>';
+    html += '</td>';
     html += '<td id="classCount_' + c.id + '">...</td>';
     html += '<td><button class="btn-danger btn-sm" onclick="deleteClass(\'' + c.id + '\')">Xóa</button></td>';
     html += '</tr>';
@@ -507,6 +524,15 @@ function renderClasses() {
   for (var j = 0; j < currentClasses.length; j++) {
     countStudentsInClass(currentClasses[j].id);
   }
+}
+
+function updateClassAudience(classId, newLevel) {
+  supabaseClient.from('sp_classes').update({ audience_level: newLevel }).eq('id', classId)
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      showToast('Đã cập nhật đối tượng lớp thành ' + audienceLevelLabel(newLevel));
+      loadClasses();
+    });
 }
 
 function countStudentsInClass(classId) {
@@ -521,7 +547,7 @@ function renderClassDropdown() {
   var sel = document.getElementById('classSelect');
   var html = '';
   for (var i = 0; i < currentClasses.length; i++) {
-    html += '<option value="' + currentClasses[i].id + '">' + escapeHtml(currentClasses[i].name) + '</option>';
+    html += '<option value="' + currentClasses[i].id + '">' + escapeHtml(currentClasses[i].name) + ' — ' + audienceLevelLabel(currentClasses[i].audience_level) + '</option>';
   }
   sel.innerHTML = html;
   if (currentClasses.length > 0) loadStudents();
@@ -936,32 +962,19 @@ function showToast(msg) {
 var selectedAssignmentImage = null;
 var currentAssignmentsList = [];
 var assignmentClassesList = [];
+var assignmentClassesInKhoi = [];
 
 function loadClassesForAssignments() {
   supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
       assignmentClassesList = res.data || [];
-      var sel = document.getElementById('assignmentClassSelect');
-      var html = '';
-      for (var i = 0; i < assignmentClassesList.length; i++) {
-        html += '<option value="' + assignmentClassesList[i].id + '">' + escapeHtml(assignmentClassesList[i].name) + '</option>';
-      }
-      sel.innerHTML = html;
-      if (assignmentClassesList.length > 0) onAssignmentClassChange();
+      onAssignmentAudienceChange();
     });
 }
 
-function getSelectedAssignmentClassAudience() {
-  var classId = document.getElementById('assignmentClassSelect').value;
-  for (var i = 0; i < assignmentClassesList.length; i++) {
-    if (assignmentClassesList[i].id === classId) return assignmentClassesList[i].audience_level || 'elementary';
-  }
-  return 'elementary';
-}
-
-function onAssignmentClassChange() {
-  var audience = getSelectedAssignmentClassAudience();
+function onAssignmentAudienceChange() {
+  var audience = document.getElementById('assignmentAudienceSelect').value;
   var isIelts = audience === 'ielts';
   var generalGroup = document.getElementById('optgroupGeneral');
   var ieltsGroup = document.getElementById('optgroupIelts');
@@ -973,11 +986,35 @@ function onAssignmentClassChange() {
   typeSelect.value = isIelts ? 'ielts_part2' : 'presentation';
 
   note.textContent = isIelts
-    ? 'Lớp IELTS → chỉ hiện các loại bài IELTS Part 1/2/3.'
-    : 'Lớp ' + audienceLevelLabel(audience) + ' → chỉ hiện 3 loại bài thường (Thuyết trình/Từ vựng/Luyện đọc).';
+    ? 'Khối IELTS → chỉ hiện các loại bài IELTS Part 1/2/3.'
+    : 'Khối ' + audienceLevelLabel(audience) + ' → chỉ hiện 3 loại bài thường (Thuyết trình/Từ vựng/Luyện đọc).';
 
   onAssignmentTypeChange();
-  loadAssignmentsAdmin();
+
+  assignmentClassesInKhoi = [];
+  for (var i = 0; i < assignmentClassesList.length; i++) {
+    var lvl = assignmentClassesList[i].audience_level || 'elementary';
+    if (lvl === audience) assignmentClassesInKhoi.push(assignmentClassesList[i]);
+  }
+  renderAssignmentClassCheckboxes();
+  loadAssignmentsForAudience(audience);
+}
+
+function renderAssignmentClassCheckboxes() {
+  var box = document.getElementById('assignmentClassCheckboxes');
+  if (assignmentClassesInKhoi.length === 0) {
+    box.innerHTML = '<p class="muted">Khối này chưa có lớp nào</p>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < assignmentClassesInKhoi.length; i++) {
+    var c = assignmentClassesInKhoi[i];
+    html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:normal;cursor:pointer;">';
+    html += '<input type="checkbox" value="' + c.id + '" class="assignment-class-checkbox" style="width:auto;">';
+    html += '<span>' + escapeHtml(c.name) + '</span>';
+    html += '</label>';
+  }
+  box.innerHTML = html;
 }
 
 function onAssignmentTypeChange() {
@@ -1072,21 +1109,24 @@ document.addEventListener('paste', function(e) {
 })();
 
 function addAssignment() {
-  var classId = document.getElementById('assignmentClassSelect').value;
   var topic = document.getElementById('newAssignmentTopic').value.trim();
   var description = document.getElementById('newAssignmentDescription').value.trim();
   var dueDate = document.getElementById('newAssignmentDueDate').value;
   var type = document.getElementById('newAssignmentType').value;
   var readingText = document.getElementById('newAssignmentReadingText').value.trim();
   var questionsText = document.getElementById('newAssignmentQuestionsText').value.trim();
-  if (!classId) { showToast('Chưa chọn lớp'); return; }
+
+  var checkboxes = document.querySelectorAll('.assignment-class-checkbox:checked');
+  var selectedClassIds = [];
+  for (var c = 0; c < checkboxes.length; c++) selectedClassIds.push(checkboxes[c].value);
+
+  if (selectedClassIds.length === 0) { showToast('Chưa tick lớp nào để giao bài'); return; }
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
   if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
 
   function insertAssignment(imageUrl) {
     supabaseClient.from('sp_assignments').insert({
-      class_id: classId,
       topic: topic,
       description: description || null,
       due_date: dueDate || null,
@@ -1094,23 +1134,34 @@ function addAssignment() {
       type: type,
       reading_text: type === 'reading' ? readingText : null,
       questions_text: (type === 'ielts_part1' || type === 'ielts_part3') ? questionsText : null
-    }).then(function(res) {
+    }).select().single().then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã tạo bài giao');
-      document.getElementById('newAssignmentTopic').value = '';
-      document.getElementById('newAssignmentDescription').value = '';
-      document.getElementById('newAssignmentDueDate').value = '';
-      document.getElementById('newAssignmentReadingText').value = '';
-      document.getElementById('newAssignmentQuestionsText').value = '';
-      setAssignmentImageFile(null);
-      document.getElementById('assignmentImageInput').value = '';
-      loadAssignmentsAdmin();
+      var assignmentId = res.data.id;
+      var links = [];
+      for (var i = 0; i < selectedClassIds.length; i++) {
+        links.push({ assignment_id: assignmentId, class_id: selectedClassIds[i] });
+      }
+      supabaseClient.from('sp_assignment_classes').insert(links).then(function(linkRes) {
+        if (linkRes.error) { showToast('Lỗi gán lớp: ' + linkRes.error.message); return; }
+        showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp');
+        document.getElementById('newAssignmentTopic').value = '';
+        document.getElementById('newAssignmentDescription').value = '';
+        document.getElementById('newAssignmentDueDate').value = '';
+        document.getElementById('newAssignmentReadingText').value = '';
+        document.getElementById('newAssignmentQuestionsText').value = '';
+        setAssignmentImageFile(null);
+        document.getElementById('assignmentImageInput').value = '';
+        var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
+        for (var k = 0; k < checkedBoxes.length; k++) checkedBoxes[k].checked = false;
+        var audience = document.getElementById('assignmentAudienceSelect').value;
+        loadAssignmentsForAudience(audience);
+      });
     });
   }
 
   if (selectedAssignmentImage) {
     var ext = (selectedAssignmentImage.name && selectedAssignmentImage.name.split('.').pop()) || 'png';
-    var path = classId + '/' + Date.now() + '.' + ext;
+    var path = 'assignments/' + Date.now() + '.' + ext;
     supabaseClient.storage.from('assignment-images').upload(path, selectedAssignmentImage)
       .then(function(uploadRes) {
         if (uploadRes.error) { showToast('Lỗi upload ảnh: ' + uploadRes.error.message); return; }
@@ -1122,13 +1173,34 @@ function addAssignment() {
   }
 }
 
-function loadAssignmentsAdmin() {
-  var classId = document.getElementById('assignmentClassSelect').value;
-  if (!classId) { document.getElementById('assignmentsListBox').innerHTML = ''; return; }
-  supabaseClient.from('sp_assignments').select('*').eq('class_id', classId).order('created_at', { ascending: false })
+function loadAssignmentsForAudience(audience) {
+  var classIds = [];
+  for (var i = 0; i < assignmentClassesInKhoi.length; i++) classIds.push(assignmentClassesInKhoi[i].id);
+
+  if (classIds.length === 0) { currentAssignmentsList = []; renderAssignmentsList(); return; }
+
+  supabaseClient.from('sp_assignment_classes')
+    .select('assignment_id, class_id, sp_classes(name), sp_assignments(*)')
+    .in('class_id', classIds)
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải bài giao: ' + res.error.message); return; }
-      currentAssignmentsList = res.data || [];
+      var rows = res.data || [];
+      var grouped = {};
+      var order = [];
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r.sp_assignments) continue;
+        var aid = r.assignment_id;
+        if (!grouped[aid]) {
+          grouped[aid] = Object.assign({}, r.sp_assignments, { _classNames: [] });
+          order.push(aid);
+        }
+        if (r.sp_classes && r.sp_classes.name) grouped[aid]._classNames.push(r.sp_classes.name);
+      }
+      var list = [];
+      for (var j = 0; j < order.length; j++) list.push(grouped[order[j]]);
+      list.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+      currentAssignmentsList = list;
       renderAssignmentsList();
     });
 }
@@ -1145,7 +1217,7 @@ function assignmentTypeLabel(type) {
 function renderAssignmentsList() {
   var box = document.getElementById('assignmentsListBox');
   if (currentAssignmentsList.length === 0) {
-    box.innerHTML = '<p class="muted">Lớp này chưa có bài giao nào</p>';
+    box.innerHTML = '<p class="muted">Khối này chưa có bài giao nào</p>';
     return;
   }
   var html = '';
@@ -1157,6 +1229,9 @@ function renderAssignmentsList() {
     html += '<b>' + escapeHtml(a.topic) + '</b>';
     html += ' <span class="pill">' + assignmentTypeLabel(a.type) + '</span>';
     if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
+    if (a._classNames && a._classNames.length > 0) {
+      html += '<div class="muted" style="margin-top:6px;">Giao cho lớp: ' + escapeHtml(a._classNames.join(', ')) + '</div>';
+    }
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;">Bài đọc mẫu: "' + escapeHtml(a.reading_text) + '"</div>';
     if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
@@ -1177,7 +1252,8 @@ function deleteAssignment(id) {
     .then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       showToast('Đã xóa bài giao');
-      loadAssignmentsAdmin();
+      var audience = document.getElementById('assignmentAudienceSelect').value;
+      loadAssignmentsForAudience(audience);
     });
 }
 
