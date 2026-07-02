@@ -215,9 +215,10 @@
 
     <div class="card">
       <h2>Thêm học sinh (dán danh sách nhanh)</h2>
-      <p class="muted">Copy bảng học sinh từ Excel/Google Sheets/hocphi-manager rồi dán vào đây. Thứ tự cột: Tên | Ngày sinh | SĐT Zalo | Phụ huynh</p>
+      <p class="muted">Copy bảng học sinh từ Excel/Google Sheets/hocphi-manager rồi dán vào đây. Thứ tự cột: Tên | Ngày sinh | SĐT Zalo | Phụ huynh. Chỉ tạo tài khoản cho học sinh có đủ cả 4 thông tin.</p>
       <textarea id="pasteArea" rows="4" placeholder="Dán danh sách vào đây..."></textarea>
       <button class="btn-primary" style="margin-top:10px;" onclick="parsePastedList()">Xem trước</button>
+      <div id="pasteSkippedBox" class="hidden" style="margin-top:14px;color:#ffb86b;font-size:13px;"></div>
       <div id="pastePreviewBox" class="hidden" style="margin-top:14px;">
         <table>
           <thead><tr><th>Tên</th><th>Ngày sinh</th><th>SĐT Zalo</th><th>Phụ huynh</th></tr></thead>
@@ -672,6 +673,7 @@ function parsePastedList() {
   var lines = raw.split('\n');
   pendingBulkStudents = [];
   var previewHtml = '';
+  var skippedNames = [];
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].replace(/\r/g, '');
     if (!line.trim()) continue;
@@ -683,6 +685,11 @@ function parsePastedList() {
     if (!name) continue;
     if (/^ten\s*(hoc\s*sinh)?$/i.test(slugifyName(name))) continue; // skip header row
 
+    if (!dobRaw || !phone || !parentName) {
+      skippedNames.push(name);
+      continue;
+    }
+
     var dobIso = convertDateToIso(dobRaw);
     pendingBulkStudents.push({ name: name, dob: dobIso, phone: phone, parentName: parentName });
 
@@ -693,8 +700,17 @@ function parsePastedList() {
     previewHtml += '<td>' + escapeHtml(parentName) + '</td>';
     previewHtml += '</tr>';
   }
+
+  var skippedBox = document.getElementById('pasteSkippedBox');
+  if (skippedNames.length > 0) {
+    skippedBox.textContent = '⚠️ Bỏ qua ' + skippedNames.length + ' học sinh thiếu thông tin (chưa đủ ngày sinh/SĐT/phụ huynh): ' + skippedNames.join(', ');
+    skippedBox.classList.remove('hidden');
+  } else {
+    skippedBox.classList.add('hidden');
+  }
+
   if (pendingBulkStudents.length === 0) {
-    showToast('Không đọc được dữ liệu học sinh nào');
+    showToast('Không có học sinh nào đủ thông tin để tạo tài khoản');
     document.getElementById('pastePreviewBox').classList.add('hidden');
     return;
   }
