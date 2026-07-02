@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speaking Practice</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #0f1420;
+    color: #e8ebf2;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .card {
+    background: #171d2e;
+    border: 1px solid #2a3350;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px 0; }
+  h2 { font-size: 16px; margin: 0 0 12px 0; color: #9db4ff; }
+  p.sub { color: #8891a8; margin: 0 0 20px 0; font-size: 14px; }
+  input[type=text], input[type=password], select {
+    background: #0f1420;
+    border: 1px solid #2a3350;
+    color: #e8ebf2;
+    border-radius: 8px;
+    padding: 12px;
+    width: 100%;
+    font-size: 15px;
+  }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e8ebf2;
+    -webkit-box-shadow: 0 0 0px 1000px #0f1420 inset;
+    box-shadow: 0 0 0px 1000px #0f1420 inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  input:focus, select:focus { outline: 2px solid #4c6fff; border-color: #4c6fff; }
+  label { display: block; font-size: 13px; color: #9db4ff; margin-bottom: 6px; margin-top: 12px; }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .btn-primary { background: #4c6fff; color: #fff; }
+  .btn-primary:disabled { background: #2a3350; color: #8891a8; cursor: not-allowed; }
+  .btn-secondary { background: #2a3350; color: #e8ebf2; }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .hidden { display: none !important; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .pwrow { position: relative; }
+  .pwrow input { padding-right: 40px; }
+  .pw-toggle {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; padding: 4px; color: #8891a8; cursor: pointer;
+  }
+  #loginScreen, #setupScreen { max-width: 360px; margin: 60px auto; text-align: center; }
+  .file-input-label {
+    display: block;
+    border: 2px dashed #2a3350;
+    border-radius: 10px;
+    padding: 24px 12px;
+    text-align: center;
+    color: #9db4ff;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .file-input-label.has-file { border-color: #4c6fff; color: #e8ebf2; }
+  #videoFileInput { display: none; }
+  .sub-item {
+    background: #0f1420;
+    border: 1px solid #232b45;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .sub-item-header { display: flex; justify-content: space-between; align-items: center; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-processing { background: #3a3220; color: #ffcf6b; }
+  .badge-graded { background: #1e3a2a; color: #7de3a0; }
+  .badge-invalid { background: #4a2030; color: #ff9db0; }
+  .badge-error { background: #4a2030; color: #ff9db0; }
+  .score-big { font-size: 22px; font-weight: 700; color: #9db4ff; }
+  .detail-box { margin-top: 12px; padding-top: 12px; border-top: 1px solid #232b45; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px;
+  }
+  .modal-box { background: #171d2e; border: 1px solid #2a3350; border-radius: 12px; padding: 22px; max-width: 420px; width: 100%; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #23305a; color: #e8ebf2; padding: 12px 20px; border-radius: 8px;
+    z-index: 999; max-width: 90%; text-align: center;
+  }
+  .muted { color: #8891a8; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setupScreen" class="card hidden">
+  <h1>Thiết lập kết nối</h1>
+  <p class="sub">Nhập thông tin Supabase (chỉ 1 lần trên máy này)</p>
+  <label>Project URL</label>
+  <input type="text" id="setupUrl" placeholder="https://xxxxx.supabase.co">
+  <label>Anon Key</label>
+  <input type="text" id="setupKey" placeholder="Anon public key">
+  <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="saveSetup()">Lưu cấu hình</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="card hidden">
+  <h1>🎤 Speaking Practice</h1>
+  <p class="sub">Đăng nhập để nộp bài</p>
+  <label>Tài khoản</label>
+  <input type="text" id="loginUsername" placeholder="Tên đăng nhập" autocapitalize="off">
+  <label>Mật khẩu</label>
+  <div class="pwrow">
+    <input type="password" id="loginPassword" placeholder="Mật khẩu" onkeydown="if(event.key==='Enter')doLogin();">
+    <button type="button" class="pw-toggle" id="loginPwToggle" onclick="togglePw('loginPassword','loginPwToggle')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+  </div>
+  <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">Đăng nhập</button>
+</div>
+
+<!-- MAIN -->
+<div id="mainApp" class="wrap hidden">
+  <div class="topbar">
+    <div>
+      <h1 id="welcomeName">🎤 Speaking Practice</h1>
+    </div>
+    <div class="row">
+      <button class="btn-secondary btn-sm" onclick="openChangePwModal()">Đổi MK</button>
+      <button class="btn-secondary btn-sm" onclick="doLogout()">Đăng xuất</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Nộp bài mới</h2>
+    <label>Chọn video (đã quay sẵn trong máy)</label>
+    <label class="file-input-label" id="fileLabel" for="videoFileInput">📹 Bấm để chọn video</label>
+    <input type="file" id="videoFileInput" accept="video/*" onchange="onFileSelected()">
+
+    <label>Bài giao</label>
+    <select id="assignmentSelect">
+      <option value="">Bài tự do (không theo bài giao)</option>
+    </select>
+
+    <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
+    <p class="muted" id="uploadStatus" style="margin-top:10px;"></p>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <h2 style="margin:0;">Bài đã nộp</h2>
+      <button class="btn-secondary btn-sm" onclick="loadSubmissions()">🔄 Làm mới</button>
+    </div>
+    <div id="submissionsList" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- MODAL: change password -->
+<div id="changePwModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <h2>Đổi mật khẩu</h2>
+    <label>Mật khẩu mới</label>
+    <div class="pwrow">
+      <input type="password" id="newPwInput" placeholder="Nhập mật khẩu mới">
+      <button type="button" class="pw-toggle" id="newPwToggle" onclick="togglePw('newPwInput','newPwToggle')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <div class="row" style="margin-top:16px;">
+      <button class="btn-secondary" onclick="closeChangePwModal()">Hủy</button>
+      <button class="btn-primary" onclick="saveNewPassword()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox"></div>
+
+<script>
+var supabaseClient = null;
+var currentStudent = null; // { id, name, class_id }
+var currentAssignments = [];
+var selectedFile = null;
+
+var eyeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+var eyeOffIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 4.22-5.19M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function togglePw(inputId, btnId) {
+  var el = document.getElementById(inputId);
+  var btn = document.getElementById(btnId);
+  if (el.type === 'password') { el.type = 'text'; btn.innerHTML = eyeOffIcon; }
+  else { el.type = 'password'; btn.innerHTML = eyeIcon; }
+}
+
+// =====================================================
+// SETUP / CONNECT
+// =====================================================
+function initApp() {
+  var url = localStorage.getItem('sp_supabase_url');
+  var key = localStorage.getItem('sp_supabase_key');
+  if (!url || !key) {
+    document.getElementById('setupScreen').classList.remove('hidden');
+    return;
+  }
+  connectSupabase(url, key);
+
+  var savedStudentId = localStorage.getItem('sp_student_id');
+  var savedStudentName = localStorage.getItem('sp_student_name');
+  var savedClassId = localStorage.getItem('sp_student_class_id');
+  if (savedStudentId) {
+    currentStudent = { id: savedStudentId, name: savedStudentName, class_id: savedClassId };
+    showMainApp();
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
+}
+
+function connectSupabase(url, key) {
+  supabaseClient = supabase.createClient(url, key);
+}
+
+function saveSetup() {
+  var url = document.getElementById('setupUrl').value.trim();
+  var key = document.getElementById('setupKey').value.trim();
+  if (!url || !key) { showToast('Vui lòng nhập đủ URL và Key'); return; }
+  localStorage.setItem('sp_supabase_url', url);
+  localStorage.setItem('sp_supabase_key', key);
+  connectSupabase(url, key);
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+// =====================================================
+// AUTH
+// =====================================================
+function doLogin() {
+  var username = document.getElementById('loginUsername').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  if (!username || !password) { showToast('Nhập đủ tài khoản và mật khẩu'); return; }
+
+  supabaseClient.from('sp_students').select('*').eq('username', username).maybeSingle()
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi kết nối: ' + res.error.message); return; }
+      if (!res.data) { showToast('Không tìm thấy tài khoản'); return; }
+      if (res.data.password !== password) { showToast('Sai mật khẩu'); return; }
+
+      currentStudent = { id: res.data.id, name: res.data.name, class_id: res.data.class_id };
+      localStorage.setItem('sp_student_id', currentStudent.id);
+      localStorage.setItem('sp_student_name', currentStudent.name);
+      localStorage.setItem('sp_student_class_id', currentStudent.class_id || '');
+      showMainApp();
+    });
+}
+
+function doLogout() {
+  localStorage.removeItem('sp_student_id');
+  localStorage.removeItem('sp_student_name');
+  localStorage.removeItem('sp_student_class_id');
+  currentStudent = null;
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+function showMainApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('welcomeName').textContent = '🎤 Chào ' + currentStudent.name;
+  loadAssignments();
+  loadSubmissions();
+}
+
+function openChangePwModal() { document.getElementById('changePwModal').classList.remove('hidden'); }
+function closeChangePwModal() {
+  document.getElementById('changePwModal').classList.add('hidden');
+  document.getElementById('newPwInput').value = '';
+}
+function saveNewPassword() {
+  var newPw = document.getElementById('newPwInput').value.trim();
+  if (!newPw) { showToast('Nhập mật khẩu mới'); return; }
+  supabaseClient.from('sp_students').update({ password: newPw }).eq('id', currentStudent.id)
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      showToast('Đã đổi mật khẩu');
+      closeChangePwModal();
+    });
+}
+
+// =====================================================
+// ASSIGNMENTS
+// =====================================================
+function loadAssignments() {
+  if (!currentStudent.class_id) return;
+  supabaseClient.from('sp_assignments').select('*')
+    .or('class_id.eq.' + currentStudent.class_id + ',student_id.eq.' + currentStudent.id)
+    .order('created_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) return;
+      currentAssignments = res.data || [];
+      var sel = document.getElementById('assignmentSelect');
+      var html = '<option value="">Bài tự do (không theo bài giao)</option>';
+      for (var i = 0; i < currentAssignments.length; i++) {
+        var a = currentAssignments[i];
+        html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + '</option>';
+      }
+      sel.innerHTML = html;
+    });
+}
+
+// =====================================================
+// UPLOAD
+// =====================================================
+function onFileSelected() {
+  var input = document.getElementById('videoFileInput');
+  var label = document.getElementById('fileLabel');
+  var btn = document.getElementById('submitBtn');
+  if (input.files && input.files.length > 0) {
+    selectedFile = input.files[0];
+    label.textContent = '✅ ' + selectedFile.name;
+    label.classList.add('has-file');
+    btn.disabled = false;
+  } else {
+    selectedFile = null;
+    label.textContent = '📹 Bấm để chọn video';
+    label.classList.remove('has-file');
+    btn.disabled = true;
+  }
+}
+
+function submitVideo() {
+  if (!selectedFile) { showToast('Chưa chọn video'); return; }
+  var assignmentId = document.getElementById('assignmentSelect').value || null;
+  var statusEl = document.getElementById('uploadStatus');
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  statusEl.textContent = 'Đang tải lên... vui lòng không tắt trình duyệt';
+
+  var ext = selectedFile.name.split('.').pop();
+  var path = currentStudent.id + '/' + Date.now() + '.' + ext;
+
+  supabaseClient.storage.from('speaking-videos').upload(path, selectedFile)
+    .then(function(uploadRes) {
+      if (uploadRes.error) {
+        statusEl.textContent = '';
+        showToast('Lỗi tải video: ' + uploadRes.error.message);
+        btn.disabled = false;
+        return;
+      }
+      var publicUrlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
+      var videoUrl = publicUrlRes.data.publicUrl;
+
+      supabaseClient.from('sp_submissions').insert({
+        student_id: currentStudent.id,
+        assignment_id: assignmentId,
+        video_url: videoUrl,
+        video_path: path,
+        status: 'processing'
+      }).then(function(insertRes) {
+        statusEl.textContent = '';
+        btn.disabled = false;
+        if (insertRes.error) {
+          showToast('Lỗi lưu bài nộp: ' + insertRes.error.message);
+          return;
+        }
+        showToast('Đã nộp bài! Đang chấm, bạn có thể quay lại xem sau.');
+        resetUploadForm();
+        loadSubmissions();
+      });
+    });
+}
+
+function resetUploadForm() {
+  selectedFile = null;
+  document.getElementById('videoFileInput').value = '';
+  var label = document.getElementById('fileLabel');
+  label.textContent = '📹 Bấm để chọn video';
+  label.classList.remove('has-file');
+  document.getElementById('submitBtn').disabled = true;
+}
+
+// =====================================================
+// SUBMISSIONS LIST
+// =====================================================
+function loadSubmissions() {
+  supabaseClient.from('sp_submissions').select('*, sp_scores(*)').eq('student_id', currentStudent.id)
+    .order('submitted_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
+      renderSubmissions(res.data || []);
+    });
+}
+
+function renderSubmissions(list) {
+  var box = document.getElementById('submissionsList');
+  if (list.length === 0) {
+    box.innerHTML = '<p class="muted">Chưa có bài nộp nào</p>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var sub = list[i];
+    var score = null;
+    if (sub.sp_scores) {
+      score = Array.isArray(sub.sp_scores) ? sub.sp_scores[0] : sub.sp_scores;
+    }
+    var dateStr = formatDate(sub.submitted_at);
+
+    html += '<div class="sub-item" onclick="toggleDetail(' + i + ')">';
+    html += '<div class="sub-item-header">';
+    html += '<div><b>' + dateStr + '</b></div>';
+    html += statusBadge(sub.status);
+    html += '</div>';
+
+    if (sub.status === 'graded' && score) {
+      html += '<div style="margin-top:8px;" class="score-big">' + (score.overall_score !== null ? score.overall_score : '-') + '/10</div>';
+      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(score.detailed_feedback || '') + '</div>';
+    } else if (sub.status === 'invalid') {
+      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml((score && score.invalid_reason) || 'Bài chưa đạt yêu cầu, vui lòng nộp lại.') + '</div>';
+    } else if (sub.status === 'processing') {
+      html += '<div class="muted" style="margin-top:8px;">Đang chấm, quay lại sau nhé...</div>';
+    } else {
+      html += '<div class="muted" style="margin-top:8px;">Có lỗi khi chấm bài này, thử nộp lại giúp mình nhé.</div>';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function toggleDetail(index) {
+  var el = document.getElementById('detail_' + index);
+  if (el) el.classList.toggle('hidden');
+}
+
+function statusBadge(status) {
+  if (status === 'graded') return '<span class="badge badge-graded">Đã chấm</span>';
+  if (status === 'invalid') return '<span class="badge badge-invalid">Không hợp lệ</span>';
+  if (status === 'processing') return '<span class="badge badge-processing">Đang chấm</span>';
+  return '<span class="badge badge-error">Lỗi</span>';
+}
+
+function formatDate(iso) {
+  var d = new Date(iso);
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  var hh = String(d.getHours()).padStart(2, '0');
+  var mi = String(d.getMinutes()).padStart(2, '0');
+  return dd + '/' + mm + '/' + yyyy + ' ' + hh + ':' + mi;
+}
+
+// =====================================================
+// UTIL
+// =====================================================
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showToast(msg) {
+  var box = document.getElementById('toastBox');
+  var el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  box.innerHTML = '';
+  box.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+}
+
+initApp();
+</script>
+</body>
+</html>
