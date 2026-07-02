@@ -182,10 +182,24 @@
       </select>
     </div>
 
-    <div id="freeImageBlock" style="margin-top:16px;">
-      <label>Đính kèm ảnh đề bài (tùy chọn — VD ảnh cần mô tả/so sánh)</label>
-      <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
-      <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
+    <div id="freePracticeBlock" style="margin-top:16px;">
+      <label>Con đang luyện gì?</label>
+      <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
+        <option value="presentation">Nói tự do / thuyết trình</option>
+        <option value="vocabulary">Đọc từ vựng</option>
+        <option value="reading">Luyện đọc theo bài</option>
+      </select>
+
+      <div id="freeImageBlock" style="margin-top:12px;">
+        <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, hoặc ảnh danh sách từ vựng)</label>
+        <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
+        <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
+      </div>
+
+      <div id="freeReadingTextBlock" class="hidden" style="margin-top:12px;">
+        <label>Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)</label>
+        <textarea id="freeReadingTextInput" rows="4" placeholder="Dán đoạn văn con đang đọc..."></textarea>
+      </div>
     </div>
     <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
       <p class="muted">Ảnh đề bài của bài giao này:</p>
@@ -373,17 +387,21 @@ function loadAssignments() {
 
 function onAssignmentChange() {
   var assignmentId = document.getElementById('assignmentSelect').value;
-  var freeImageBlock = document.getElementById('freeImageBlock');
+  var freePracticeBlock = document.getElementById('freePracticeBlock');
   var previewBlock = document.getElementById('assignmentImagePreview');
   var readingBlock = document.getElementById('readingTextPreview');
 
   if (!assignmentId) {
-    // Bài tự do -> cho học sinh tự đính ảnh nếu muốn
-    freeImageBlock.classList.remove('hidden');
+    // Bài tự do -> cho học sinh chọn loại luyện tập
+    freePracticeBlock.classList.remove('hidden');
     previewBlock.classList.add('hidden');
     readingBlock.classList.add('hidden');
+    onFreePracticeTypeChange();
     return;
   }
+
+  // Có bài giao -> ẩn hẳn khối chọn loại tự do, dùng loại đã định nghĩa trong bài giao
+  freePracticeBlock.classList.add('hidden');
 
   var chosen = null;
   for (var i = 0; i < currentAssignments.length; i++) {
@@ -391,21 +409,30 @@ function onAssignmentChange() {
   }
 
   if (chosen && chosen.reference_image_url) {
-    // Bài giao đã có sẵn ảnh -> không cần học sinh tự đính nữa
-    freeImageBlock.classList.add('hidden');
     document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
     previewBlock.classList.remove('hidden');
   } else {
-    freeImageBlock.classList.remove('hidden');
     previewBlock.classList.add('hidden');
   }
 
   if (chosen && chosen.type === 'reading' && chosen.reading_text) {
     document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
     readingBlock.classList.remove('hidden');
-    freeImageBlock.classList.add('hidden'); // bài đọc mẫu không cần đính ảnh
   } else {
     readingBlock.classList.add('hidden');
+  }
+}
+
+function onFreePracticeTypeChange() {
+  var type = document.getElementById('freePracticeType').value;
+  var imageBlock = document.getElementById('freeImageBlock');
+  var readingTextBlock = document.getElementById('freeReadingTextBlock');
+  if (type === 'reading') {
+    imageBlock.classList.add('hidden');
+    readingTextBlock.classList.remove('hidden');
+  } else {
+    imageBlock.classList.remove('hidden');
+    readingTextBlock.classList.add('hidden');
   }
 }
 
@@ -434,7 +461,7 @@ function setRefImageFile(file) {
 // Dán ảnh bằng Ctrl+V
 document.addEventListener('paste', function(e) {
   var freeImageBlock = document.getElementById('freeImageBlock');
-  if (!freeImageBlock || freeImageBlock.classList.contains('hidden')) return;
+  if (!freeImageBlock || freeImageBlock.offsetParent === null) return; // ẩn (kể cả do khối cha bị ẩn)
   if (!e.clipboardData || !e.clipboardData.items) return;
   for (var i = 0; i < e.clipboardData.items.length; i++) {
     var item = e.clipboardData.items[i];
@@ -583,6 +610,10 @@ function onFileSelected() {
 function submitVideo() {
   if (!selectedFile) { showToast('Chưa có bản ghi âm nào'); return; }
   var assignmentId = document.getElementById('assignmentSelect').value || null;
+  var practiceType = assignmentId ? null : document.getElementById('freePracticeType').value;
+  var freeReadingText = (!assignmentId && practiceType === 'reading')
+    ? document.getElementById('freeReadingTextInput').value.trim()
+    : null;
   var statusEl = document.getElementById('uploadStatus');
   var btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -598,6 +629,8 @@ function submitVideo() {
       video_url: fileUrl,
       video_path: path,
       reference_image_url: refImageUrl || null,
+      practice_type: practiceType,
+      reading_text: freeReadingText || null,
       status: 'processing'
     }).then(function(insertRes) {
       statusEl.textContent = '';
@@ -613,7 +646,7 @@ function submitVideo() {
   }
 
   function uploadRefImageThen(fileUrl) {
-    if (!selectedRefImage) { finishInsert(fileUrl, null); return; }
+    if (!selectedRefImage || practiceType === 'reading') { finishInsert(fileUrl, null); return; }
     var imgExt = selectedRefImage.name.split('.').pop();
     var imgPath = currentStudent.id + '/' + Date.now() + '_ref.' + imgExt;
     supabaseClient.storage.from('assignment-images').upload(imgPath, selectedRefImage)
@@ -652,6 +685,12 @@ function resetUploadForm() {
   var refLabel = document.getElementById('refImageLabel');
   refLabel.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
   refLabel.classList.remove('has-file');
+
+  var practiceTypeSel = document.getElementById('freePracticeType');
+  if (practiceTypeSel) practiceTypeSel.value = 'presentation';
+  var freeReadingInput = document.getElementById('freeReadingTextInput');
+  if (freeReadingInput) freeReadingInput.value = '';
+  onFreePracticeTypeChange();
 }
 
 // =====================================================
