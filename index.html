@@ -137,17 +137,6 @@
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setupScreen" class="card hidden">
-  <h1>Thiết lập kết nối</h1>
-  <p class="sub">Nhập thông tin Supabase (chỉ 1 lần trên máy này)</p>
-  <label>Project URL</label>
-  <input type="text" id="setupUrl" placeholder="https://xxxxx.supabase.co">
-  <label>Anon Key</label>
-  <input type="text" id="setupKey" placeholder="Anon public key">
-  <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="saveSetup()">Lưu cấu hình</button>
-</div>
-
 <!-- LOGIN -->
 <div id="loginScreen" class="card hidden">
   <h1>🎤 Speaking Practice</h1>
@@ -300,16 +289,13 @@ function togglePw(inputId, btnId) {
 }
 
 // =====================================================
-// SETUP / CONNECT
+// SETUP / CONNECT (gắn cứng sẵn - học sinh/phụ huynh không cần cấu hình gì)
 // =====================================================
+var SUPABASE_URL_FIXED = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
+var SUPABASE_ANON_KEY_FIXED = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
+
 function initApp() {
-  var url = localStorage.getItem('sp_supabase_url');
-  var key = localStorage.getItem('sp_supabase_key');
-  if (!url || !key) {
-    document.getElementById('setupScreen').classList.remove('hidden');
-    return;
-  }
-  connectSupabase(url, key);
+  connectSupabase(SUPABASE_URL_FIXED, SUPABASE_ANON_KEY_FIXED);
 
   var savedStudentId = localStorage.getItem('sp_student_id');
   var savedStudentName = localStorage.getItem('sp_student_name');
@@ -325,17 +311,6 @@ function initApp() {
 
 function connectSupabase(url, key) {
   supabaseClient = supabase.createClient(url, key);
-}
-
-function saveSetup() {
-  var url = document.getElementById('setupUrl').value.trim();
-  var key = document.getElementById('setupKey').value.trim();
-  if (!url || !key) { showToast('Vui lòng nhập đủ URL và Key'); return; }
-  localStorage.setItem('sp_supabase_url', url);
-  localStorage.setItem('sp_supabase_key', key);
-  connectSupabase(url, key);
-  document.getElementById('setupScreen').classList.add('hidden');
-  document.getElementById('loginScreen').classList.remove('hidden');
 }
 
 // =====================================================
