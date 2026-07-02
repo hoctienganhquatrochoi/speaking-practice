@@ -155,7 +155,9 @@
   <label>Mật khẩu Admin</label>
   <div class="pwrow">
     <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" onkeydown="if(event.key==='Enter')doLogin();">
-    <button type="button" class="pw-toggle" onclick="togglePw('loginPassword', this)">Hiện</button>
+    <button type="button" class="pw-toggle" id="loginPasswordToggle" onclick="togglePw('loginPassword', 'loginPasswordToggle')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
   </div>
   <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">Đăng nhập</button>
 </div>
@@ -270,7 +272,9 @@
     <label>Mật khẩu mới</label>
     <div class="pwrow">
       <input type="password" id="newAdminPassword" placeholder="Nhập mật khẩu mới">
-      <button type="button" class="pw-toggle" onclick="togglePw('newAdminPassword', this)">Hiện</button>
+      <button type="button" class="pw-toggle" id="newAdminPasswordToggle" onclick="togglePw('newAdminPassword', 'newAdminPasswordToggle')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
     </div>
     <div class="row" style="margin-top:16px;">
       <button class="btn-secondary" onclick="closeChangePasswordModal()">Hủy</button>
@@ -338,13 +342,17 @@ function saveSetup() {
 // =====================================================
 function doLogin() {
   var pw = document.getElementById('loginPassword').value;
-  supabaseClient.from('app_settings').select('value').eq('key', 'sp_admin_password').single()
+  supabaseClient.from('app_settings').select('value').eq('key', 'sp_admin_password').maybeSingle()
     .then(function(res) {
       if (res.error) {
         showToast('Lỗi kết nối: ' + res.error.message);
         return;
       }
-      if (res.data && res.data.value === pw) {
+      if (!res.data) {
+        showToast('Chưa có mật khẩu Admin trong bảng app_settings. Kiểm tra lại bảng trong Supabase (Table Editor).');
+        return;
+      }
+      if (res.data.value === pw) {
         sessionStorage.setItem('sp_admin_logged_in', 'yes');
         showMainApp();
       } else {
@@ -690,14 +698,18 @@ function importNextStudent(index, classId) {
 // =====================================================
 // UTIL
 // =====================================================
-function togglePw(inputId, btn) {
+var eyeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+var eyeOffIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 4.22-5.19M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function togglePw(inputId, btnId) {
   var el = document.getElementById(inputId);
+  var btn = document.getElementById(btnId);
   if (el.type === 'password') {
     el.type = 'text';
-    btn.textContent = 'Ẩn';
+    btn.innerHTML = eyeOffIcon;
   } else {
     el.type = 'password';
-    btn.textContent = 'Hiện';
+    btn.innerHTML = eyeIcon;
   }
 }
 
