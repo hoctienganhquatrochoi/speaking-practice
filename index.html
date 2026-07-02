@@ -184,12 +184,16 @@
 
     <div id="freeImageBlock" style="margin-top:16px;">
       <label>Đính kèm ảnh đề bài (tùy chọn — VD ảnh cần mô tả/so sánh)</label>
-      <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn ảnh</label>
+      <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
       <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
     </div>
     <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
       <p class="muted">Ảnh đề bài của bài giao này:</p>
       <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
+    </div>
+    <div id="readingTextPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
+      <p class="muted" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
+      <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;"></p>
     </div>
 
     <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
@@ -371,11 +375,13 @@ function onAssignmentChange() {
   var assignmentId = document.getElementById('assignmentSelect').value;
   var freeImageBlock = document.getElementById('freeImageBlock');
   var previewBlock = document.getElementById('assignmentImagePreview');
+  var readingBlock = document.getElementById('readingTextPreview');
 
   if (!assignmentId) {
     // Bài tự do -> cho học sinh tự đính ảnh nếu muốn
     freeImageBlock.classList.remove('hidden');
     previewBlock.classList.add('hidden');
+    readingBlock.classList.add('hidden');
     return;
   }
 
@@ -393,21 +399,80 @@ function onAssignmentChange() {
     freeImageBlock.classList.remove('hidden');
     previewBlock.classList.add('hidden');
   }
+
+  if (chosen && chosen.type === 'reading' && chosen.reading_text) {
+    document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
+    readingBlock.classList.remove('hidden');
+    freeImageBlock.classList.add('hidden'); // bài đọc mẫu không cần đính ảnh
+  } else {
+    readingBlock.classList.add('hidden');
+  }
 }
 
 function onRefImageSelected() {
   var input = document.getElementById('refImageInput');
-  var label = document.getElementById('refImageLabel');
   if (input.files && input.files.length > 0) {
-    selectedRefImage = input.files[0];
-    label.textContent = '✅ ' + selectedRefImage.name;
+    setRefImageFile(input.files[0]);
+  } else {
+    setRefImageFile(null);
+  }
+}
+
+function setRefImageFile(file) {
+  var label = document.getElementById('refImageLabel');
+  if (file) {
+    selectedRefImage = file;
+    label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
   } else {
     selectedRefImage = null;
-    label.textContent = '🖼️ Bấm để chọn ảnh';
+    label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
     label.classList.remove('has-file');
   }
 }
+
+// Dán ảnh bằng Ctrl+V
+document.addEventListener('paste', function(e) {
+  var freeImageBlock = document.getElementById('freeImageBlock');
+  if (!freeImageBlock || freeImageBlock.classList.contains('hidden')) return;
+  if (!e.clipboardData || !e.clipboardData.items) return;
+  for (var i = 0; i < e.clipboardData.items.length; i++) {
+    var item = e.clipboardData.items[i];
+    if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+      var file = item.getAsFile();
+      setRefImageFile(file);
+      showToast('Đã dán ảnh');
+      break;
+    }
+  }
+});
+
+// Kéo thả ảnh vào ô chọn ảnh
+(function setupRefImageDragDrop() {
+  function bind() {
+    var label = document.getElementById('refImageLabel');
+    if (!label) return;
+    label.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      label.style.borderColor = '#4c6fff';
+    });
+    label.addEventListener('dragleave', function(e) {
+      label.style.borderColor = '';
+    });
+    label.addEventListener('drop', function(e) {
+      e.preventDefault();
+      label.style.borderColor = '';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        setRefImageFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
 
 // =====================================================
 // GHI ÂM TRỰC TIẾP
@@ -585,7 +650,7 @@ function resetUploadForm() {
   selectedRefImage = null;
   document.getElementById('refImageInput').value = '';
   var refLabel = document.getElementById('refImageLabel');
-  refLabel.textContent = '🖼️ Bấm để chọn ảnh';
+  refLabel.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
   refLabel.classList.remove('has-file');
 }
 
