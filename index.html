@@ -400,9 +400,14 @@ function loadAssignments() {
     .select('*')
     .eq('student_id', currentStudent.id);
 
-  Promise.all([byClass, byStudent]).then(function(results) {
+  var excludedQuery = supabaseClient.from('sp_assignment_excluded_students')
+    .select('assignment_id')
+    .eq('student_id', currentStudent.id);
+
+  Promise.all([byClass, byStudent, excludedQuery]).then(function(results) {
     var classRes = results[0];
     var studentRes = results[1];
+    var excludedRes = results[2];
     var merged = {};
 
     if (!classRes.error) {
@@ -415,6 +420,13 @@ function loadAssignments() {
       var studentRows = studentRes.data || [];
       for (var j = 0; j < studentRows.length; j++) {
         merged[studentRows[j].id] = studentRows[j];
+      }
+    }
+
+    if (!excludedRes.error) {
+      var excludedRows = excludedRes.data || [];
+      for (var k = 0; k < excludedRows.length; k++) {
+        delete merged[excludedRows[k].assignment_id]; // bị loại trừ (nghỉ học) -> không hiện bài giao này
       }
     }
 
