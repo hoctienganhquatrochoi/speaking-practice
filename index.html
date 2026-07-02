@@ -214,34 +214,9 @@
     </div>
 
     <div class="card">
-      <h2>Thêm học sinh</h2>
-      <div class="row">
-        <div class="grow">
-          <label>Tên học sinh</label>
-          <input type="text" id="newStudentName" placeholder="VD: Nguyễn Văn An">
-        </div>
-        <div class="grow">
-          <label>Ngày sinh</label>
-          <input type="date" id="newStudentDob">
-        </div>
-      </div>
-      <div class="row">
-        <div class="grow">
-          <label>Tên phụ huynh</label>
-          <input type="text" id="newStudentParentName" placeholder="VD: Mẹ An">
-        </div>
-        <div class="grow">
-          <label>SĐT Zalo phụ huynh</label>
-          <input type="text" id="newStudentParentPhone" placeholder="0912xxxxxx">
-        </div>
-      </div>
-      <button class="btn-primary" style="margin-top:14px;" onclick="addStudent()">+ Thêm học sinh</button>
-    </div>
-
-    <div class="card">
-      <h2>Dán danh sách nhiều học sinh</h2>
-      <p class="muted">Copy bảng học sinh từ file/app quản lý khác rồi dán vào đây. Mỗi dòng 1 học sinh, các cột cách nhau bằng Tab (dán từ Excel/Google Sheets/hocphi-manager sẽ tự đúng định dạng). Thứ tự cột: Tên | Ngày sinh | SĐT Zalo | Phụ huynh</p>
-      <textarea id="pasteArea" rows="6" placeholder="Dán danh sách vào đây..."></textarea>
+      <h2>Thêm học sinh (dán danh sách nhanh)</h2>
+      <p class="muted">Copy bảng học sinh từ Excel/Google Sheets/hocphi-manager rồi dán vào đây. Thứ tự cột: Tên | Ngày sinh | SĐT Zalo | Phụ huynh</p>
+      <textarea id="pasteArea" rows="4" placeholder="Dán danh sách vào đây..."></textarea>
       <button class="btn-primary" style="margin-top:10px;" onclick="parsePastedList()">Xem trước</button>
       <div id="pastePreviewBox" class="hidden" style="margin-top:14px;">
         <table>
@@ -253,12 +228,26 @@
     </div>
 
     <div class="card">
-      <h2>Danh sách học sinh</h2>
-      <div class="searchrow">
-        <input type="text" id="studentSearch" placeholder="Tìm theo tên..." oninput="renderStudents()">
+      <div class="row" style="justify-content:space-between;">
+        <h2 style="margin:0;">Danh sách học sinh</h2>
+        <div class="row">
+          <button class="btn-secondary btn-sm" onclick="addEmptyStudentRow()">+ Thêm hàng</button>
+          <button class="btn-primary btn-sm" onclick="saveAllStudents()">💾 Lưu tất cả</button>
+        </div>
+      </div>
+      <div class="searchrow" style="margin-top:14px;">
+        <input type="text" id="studentSearch" placeholder="Tìm theo tên..." oninput="renderStudentsTable()">
       </div>
       <table>
-        <thead><tr><th>Tên</th><th>Tài khoản</th><th>Phụ huynh</th><th>SĐT</th><th></th></tr></thead>
+        <thead><tr>
+          <th style="width:26px;">#</th>
+          <th>Tên học sinh *</th>
+          <th style="width:130px;">Ngày sinh</th>
+          <th style="width:130px;">SĐT Zalo</th>
+          <th>Phụ huynh</th>
+          <th>Tài khoản</th>
+          <th style="width:150px;"></th>
+        </tr></thead>
         <tbody id="studentsTableBody"></tbody>
       </table>
     </div>
@@ -489,36 +478,67 @@ function deleteClass(id) {
 // =====================================================
 // STUDENTS
 // =====================================================
+function isoToDisplayDate(iso) {
+  if (!iso) return '';
+  var parts = iso.split('-');
+  if (parts.length !== 3) return '';
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
 function loadStudents() {
   var classId = document.getElementById('classSelect').value;
-  if (!classId) { currentStudents = []; renderStudents(); return; }
+  if (!classId) { currentStudents = []; renderStudentsTable(); return; }
   supabaseClient.from('sp_students').select('*').eq('class_id', classId).order('name', { ascending: true })
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải học sinh: ' + res.error.message); return; }
-      currentStudents = res.data || [];
-      renderStudents();
+      var rows = res.data || [];
+      currentStudents = [];
+      for (var i = 0; i < rows.length; i++) {
+        currentStudents.push({
+          id: rows[i].id,
+          name: rows[i].name,
+          dobDisplay: isoToDisplayDate(rows[i].dob),
+          parent_name: rows[i].parent_name || '',
+          parent_phone: rows[i].parent_phone || '',
+          username: rows[i].username
+        });
+      }
+      renderStudentsTable();
     });
 }
 
-function renderStudents() {
+function updateStudentField(index, field, value) {
+  if (currentStudents[index]) currentStudents[index][field] = value;
+}
+
+function addEmptyStudentRow() {
+  currentStudents.push({ id: null, name: '', dobDisplay: '', parent_name: '', parent_phone: '', username: '' });
+  renderStudentsTable();
+}
+
+function renderStudentsTable() {
   var searchVal = document.getElementById('studentSearch').value.toLowerCase();
   var tbody = document.getElementById('studentsTableBody');
   var html = '';
+  var shown = 0;
   for (var i = 0; i < currentStudents.length; i++) {
     var s = currentStudents[i];
     if (searchVal && s.name.toLowerCase().indexOf(searchVal) === -1) continue;
+    shown++;
     html += '<tr>';
-    html += '<td>' + escapeHtml(s.name) + '</td>';
-    html += '<td><span class="pill">' + escapeHtml(s.username) + '</span></td>';
-    html += '<td>' + escapeHtml(s.parent_name || '-') + '</td>';
-    html += '<td>' + escapeHtml(s.parent_phone || '-') + '</td>';
+    html += '<td class="muted">' + shown + '</td>';
+    html += '<td><input type="text" value="' + escapeHtml(s.name) + '" placeholder="Tên học sinh *" oninput="updateStudentField(' + i + ',\'name\',this.value)"></td>';
+    html += '<td><input type="text" value="' + escapeHtml(s.dobDisplay) + '" placeholder="dd/mm/yyyy" oninput="updateStudentField(' + i + ',\'dobDisplay\',this.value)"></td>';
+    html += '<td><input type="text" value="' + escapeHtml(s.parent_phone) + '" placeholder="0912xxxxxx" oninput="updateStudentField(' + i + ',\'parent_phone\',this.value)"></td>';
+    html += '<td><input type="text" value="' + escapeHtml(s.parent_name) + '" placeholder="Tên PH" oninput="updateStudentField(' + i + ',\'parent_name\',this.value)"></td>';
+    html += '<td>' + (s.username ? '<span class="pill">' + escapeHtml(s.username) + '</span>' : '<span class="muted">Chưa lưu</span>') + '</td>';
     html += '<td>';
-    html += '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> ';
-    html += '<button class="btn-danger btn-sm" onclick="deleteStudent(\'' + s.id + '\')">Xóa</button>';
+    if (s.id) html += '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> ';
+    html += '<button class="btn-danger btn-sm" onclick="deleteStudentRow(' + i + ')">Xóa</button>';
     html += '</td>';
     html += '</tr>';
   }
-  if (html === '') html = '<tr><td colspan="5" class="muted">Chưa có học sinh nào</td></tr>';
+  if (html === '') html = '<tr><td colspan="7" class="muted">Chưa có học sinh nào, bấm "+ Thêm hàng" để bắt đầu</td></tr>';
   tbody.innerHTML = html;
 }
 
@@ -555,35 +575,71 @@ function generateUniqueUsername(baseName, callback) {
     });
 }
 
-function addStudent() {
-  var name = document.getElementById('newStudentName').value.trim();
-  var dob = document.getElementById('newStudentDob').value;
-  var parentName = document.getElementById('newStudentParentName').value.trim();
-  var parentPhone = document.getElementById('newStudentParentPhone').value.trim();
+function saveAllStudents() {
   var classId = document.getElementById('classSelect').value;
-  if (!name) { showToast('Nhập tên học sinh'); return; }
   if (!classId) { showToast('Chưa chọn lớp'); return; }
+  var newlyCreated = [];
+  saveStudentAtIndex(0, classId, newlyCreated);
+}
 
-  generateUniqueUsername(name, function(username) {
-    var record = {
-      class_id: classId,
-      name: name,
-      username: username,
-      password: '123456',
-      dob: dob || null,
-      parent_name: parentName || null,
-      parent_phone: parentPhone || null
-    };
-    supabaseClient.from('sp_students').insert(record).then(function(res) {
+function saveStudentAtIndex(index, classId, newlyCreated) {
+  if (index >= currentStudents.length) {
+    showToast('Đã lưu xong');
+    if (newlyCreated.length > 0) showCredModalList(newlyCreated);
+    loadStudents();
+    return;
+  }
+  var s = currentStudents[index];
+  if (!s.name || !s.name.trim()) {
+    saveStudentAtIndex(index + 1, classId, newlyCreated);
+    return;
+  }
+  var dobIso = convertDateToIso(s.dobDisplay);
+  if (s.id) {
+    // update existing
+    supabaseClient.from('sp_students').update({
+      name: s.name.trim(),
+      dob: dobIso,
+      parent_name: s.parent_name || null,
+      parent_phone: s.parent_phone || null
+    }).eq('id', s.id).then(function(res) {
+      saveStudentAtIndex(index + 1, classId, newlyCreated);
+    });
+  } else {
+    // insert new
+    generateUniqueUsername(s.name, function(username) {
+      var record = {
+        class_id: classId,
+        name: s.name.trim(),
+        username: username,
+        password: '123456',
+        dob: dobIso,
+        parent_name: s.parent_name || null,
+        parent_phone: s.parent_phone || null
+      };
+      supabaseClient.from('sp_students').insert(record).then(function(res) {
+        if (!res.error) newlyCreated.push({ name: s.name.trim(), username: username, password: '123456' });
+        saveStudentAtIndex(index + 1, classId, newlyCreated);
+      });
+    });
+  }
+}
+
+function deleteStudentRow(index) {
+  var s = currentStudents[index];
+  if (!s.id) {
+    // unsaved row, just remove locally
+    currentStudents.splice(index, 1);
+    renderStudentsTable();
+    return;
+  }
+  if (!confirm('Xóa học sinh này? Toàn bộ bài nộp/điểm liên quan cũng sẽ bị xóa.')) return;
+  supabaseClient.from('sp_students').delete().eq('id', s.id)
+    .then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      document.getElementById('newStudentName').value = '';
-      document.getElementById('newStudentDob').value = '';
-      document.getElementById('newStudentParentName').value = '';
-      document.getElementById('newStudentParentPhone').value = '';
-      showCredModal(name, username, '123456');
+      showToast('Đã xóa học sinh');
       loadStudents();
     });
-  });
 }
 
 function resetStudentPassword(id) {
@@ -595,19 +651,13 @@ function resetStudentPassword(id) {
     });
 }
 
-function deleteStudent(id) {
-  if (!confirm('Xóa học sinh này? Toàn bộ bài nộp/điểm liên quan cũng sẽ bị xóa.')) return;
-  supabaseClient.from('sp_students').delete().eq('id', id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã xóa học sinh');
-      loadStudents();
-    });
-}
-
-function showCredModal(name, username, password) {
+function showCredModalList(list) {
   var box = document.getElementById('credBoxContent');
-  box.innerHTML = '<b>' + escapeHtml(name) + '</b><br>Tài khoản: <b>' + escapeHtml(username) + '</b><br>Mật khẩu: <b>' + escapeHtml(password) + '</b>';
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    html += '<div style="margin-bottom:10px;"><b>' + escapeHtml(list[i].name) + '</b><br>Tài khoản: <b>' + escapeHtml(list[i].username) + '</b> | Mật khẩu: <b>' + escapeHtml(list[i].password) + '</b></div>';
+  }
+  box.innerHTML = html;
   document.getElementById('credModal').classList.remove('hidden');
 }
 function closeCredModal() {
