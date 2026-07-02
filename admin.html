@@ -178,6 +178,7 @@
   <div class="tabs">
     <button class="tab-btn active" id="tabBtnClasses" onclick="switchTab('classes')">Lớp học</button>
     <button class="tab-btn" id="tabBtnStudents" onclick="switchTab('students')">Học sinh</button>
+    <button class="tab-btn" id="tabBtnAssignments" onclick="switchTab('assignments')">Bài giao</button>
   </div>
 
   <!-- TAB: CLASSES -->
@@ -251,6 +252,33 @@
         </tr></thead>
         <tbody id="studentsTableBody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- TAB: ASSIGNMENTS -->
+  <div id="tabAssignments" class="hidden">
+    <div class="card">
+      <h2>Chọn lớp</h2>
+      <select id="assignmentClassSelect" onchange="loadAssignmentsAdmin()"></select>
+    </div>
+
+    <div class="card">
+      <h2>Tạo bài giao mới</h2>
+      <label>Chủ đề</label>
+      <input type="text" id="newAssignmentTopic" placeholder="VD: So sánh 2 bức tranh Unit 2 - Playtime">
+      <label>Mô tả thêm (tùy chọn)</label>
+      <textarea id="newAssignmentDescription" rows="3" placeholder="Yêu cầu chi tiết cho học sinh..."></textarea>
+      <label>Hạn nộp (tùy chọn)</label>
+      <input type="date" id="newAssignmentDueDate">
+      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh)</label>
+      <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn ảnh</label>
+      <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
+      <button class="btn-primary" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
+    </div>
+
+    <div class="card">
+      <h2>Danh sách bài giao</h2>
+      <div id="assignmentsListBox"></div>
     </div>
   </div>
 </div>
@@ -387,19 +415,29 @@ function saveNewAdminPassword() {
 function switchTab(tab) {
   var classesTab = document.getElementById('tabClasses');
   var studentsTab = document.getElementById('tabStudents');
+  var assignmentsTab = document.getElementById('tabAssignments');
   var btnClasses = document.getElementById('tabBtnClasses');
   var btnStudents = document.getElementById('tabBtnStudents');
+  var btnAssignments = document.getElementById('tabBtnAssignments');
+
+  classesTab.classList.add('hidden');
+  studentsTab.classList.add('hidden');
+  assignmentsTab.classList.add('hidden');
+  btnClasses.classList.remove('active');
+  btnStudents.classList.remove('active');
+  btnAssignments.classList.remove('active');
+
   if (tab === 'classes') {
     classesTab.classList.remove('hidden');
-    studentsTab.classList.add('hidden');
     btnClasses.classList.add('active');
-    btnStudents.classList.remove('active');
-  } else {
-    classesTab.classList.add('hidden');
+  } else if (tab === 'students') {
     studentsTab.classList.remove('hidden');
-    btnClasses.classList.remove('active');
     btnStudents.classList.add('active');
-    loadClasses(); // refresh dropdown too
+    loadClasses();
+  } else if (tab === 'assignments') {
+    assignmentsTab.classList.remove('hidden');
+    btnAssignments.classList.add('active');
+    loadClassesForAssignments();
   }
 }
 
@@ -852,6 +890,131 @@ function showToast(msg) {
   setTimeout(function() {
     if (el.parentNode) el.parentNode.removeChild(el);
   }, 3000);
+}
+
+// =====================================================
+// ASSIGNMENTS
+// =====================================================
+var selectedAssignmentImage = null;
+var currentAssignmentsList = [];
+
+function loadClassesForAssignments() {
+  supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
+      var sel = document.getElementById('assignmentClassSelect');
+      var html = '';
+      for (var i = 0; i < (res.data || []).length; i++) {
+        html += '<option value="' + res.data[i].id + '">' + escapeHtml(res.data[i].name) + '</option>';
+      }
+      sel.innerHTML = html;
+      if (res.data && res.data.length > 0) loadAssignmentsAdmin();
+    });
+}
+
+function onAssignmentImageSelected() {
+  var input = document.getElementById('assignmentImageInput');
+  var label = document.getElementById('assignmentImageLabel');
+  if (input.files && input.files.length > 0) {
+    selectedAssignmentImage = input.files[0];
+    label.textContent = '✅ ' + selectedAssignmentImage.name;
+    label.classList.add('has-file');
+  } else {
+    selectedAssignmentImage = null;
+    label.textContent = '🖼️ Bấm để chọn ảnh';
+    label.classList.remove('has-file');
+  }
+}
+
+function addAssignment() {
+  var classId = document.getElementById('assignmentClassSelect').value;
+  var topic = document.getElementById('newAssignmentTopic').value.trim();
+  var description = document.getElementById('newAssignmentDescription').value.trim();
+  var dueDate = document.getElementById('newAssignmentDueDate').value;
+  if (!classId) { showToast('Chưa chọn lớp'); return; }
+  if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
+
+  function insertAssignment(imageUrl) {
+    supabaseClient.from('sp_assignments').insert({
+      class_id: classId,
+      topic: topic,
+      description: description || null,
+      due_date: dueDate || null,
+      reference_image_url: imageUrl || null
+    }).then(function(res) {
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      showToast('Đã tạo bài giao');
+      document.getElementById('newAssignmentTopic').value = '';
+      document.getElementById('newAssignmentDescription').value = '';
+      document.getElementById('newAssignmentDueDate').value = '';
+      selectedAssignmentImage = null;
+      document.getElementById('assignmentImageInput').value = '';
+      var label = document.getElementById('assignmentImageLabel');
+      label.textContent = '🖼️ Bấm để chọn ảnh';
+      label.classList.remove('has-file');
+      loadAssignmentsAdmin();
+    });
+  }
+
+  if (selectedAssignmentImage) {
+    var ext = selectedAssignmentImage.name.split('.').pop();
+    var path = classId + '/' + Date.now() + '.' + ext;
+    supabaseClient.storage.from('assignment-images').upload(path, selectedAssignmentImage)
+      .then(function(uploadRes) {
+        if (uploadRes.error) { showToast('Lỗi upload ảnh: ' + uploadRes.error.message); return; }
+        var urlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(path);
+        insertAssignment(urlRes.data.publicUrl);
+      });
+  } else {
+    insertAssignment(null);
+  }
+}
+
+function loadAssignmentsAdmin() {
+  var classId = document.getElementById('assignmentClassSelect').value;
+  if (!classId) { document.getElementById('assignmentsListBox').innerHTML = ''; return; }
+  supabaseClient.from('sp_assignments').select('*').eq('class_id', classId).order('created_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải bài giao: ' + res.error.message); return; }
+      currentAssignmentsList = res.data || [];
+      renderAssignmentsList();
+    });
+}
+
+function renderAssignmentsList() {
+  var box = document.getElementById('assignmentsListBox');
+  if (currentAssignmentsList.length === 0) {
+    box.innerHTML = '<p class="muted">Lớp này chưa có bài giao nào</p>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < currentAssignmentsList.length; i++) {
+    var a = currentAssignmentsList[i];
+    html += '<div class="card" style="margin-bottom:10px;">';
+    html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
+    html += '<div>';
+    html += '<b>' + escapeHtml(a.topic) + '</b>';
+    if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
+    if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
+    html += '</div>';
+    html += '<button class="btn-danger btn-sm" onclick="deleteAssignment(\'' + a.id + '\')">Xóa</button>';
+    html += '</div>';
+    if (a.reference_image_url) {
+      html += '<img src="' + a.reference_image_url + '" style="max-width:200px;border-radius:8px;margin-top:10px;">';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function deleteAssignment(id) {
+  if (!confirm('Xóa bài giao này?')) return;
+  supabaseClient.from('sp_assignments').delete().eq('id', id)
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      showToast('Đã xóa bài giao');
+      loadAssignmentsAdmin();
+    });
 }
 
 initApp();
