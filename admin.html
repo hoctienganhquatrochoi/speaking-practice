@@ -1436,6 +1436,8 @@ function renderStudentResults(list) {
       html += '<div style="margin-top:8px;font-size:20px;font-weight:700;color:#9db4ff;">' + scoreLabel + '</div>';
       html += '<div style="margin-top:8px;line-height:1.6;white-space:pre-wrap;font-size:14px;">' + escapeHtml(addFeedbackIconsAdmin(score.detailed_feedback || '')) + '</div>';
       if (score.goal_suggestion) html += '<div class="muted" style="margin-top:8px;">🎯 Mục tiêu tiếp theo: ' + escapeHtml(score.goal_suggestion) + '</div>';
+      html += '<button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="analyzeSubmissionDetail(\'' + sub.id + '\', this)">📝 Phân tích chi tiết (transcript + dịch + lỗi ngữ pháp)</button>';
+      html += '<div id="analysisBox_' + sub.id + '" class="hidden" style="margin-top:12px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;"></div>';
     } else if (sub.status === 'invalid') {
       html += '<div class="muted" style="margin-top:8px;">' + escapeHtml((score && score.invalid_reason) || 'Bài không hợp lệ') + '</div>';
     } else if (sub.status === 'processing') {
@@ -1452,6 +1454,47 @@ function renderStudentResults(list) {
     }
     html += '</div>';
   }
+  box.innerHTML = html;
+}
+
+function analyzeSubmissionDetail(submissionId, btn) {
+  var box = document.getElementById('analysisBox_' + submissionId);
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang phân tích (có thể mất 30-60 giây)...';
+  box.classList.remove('hidden');
+  box.innerHTML = '<p class="muted">Đang gửi lên Gemini phân tích, vui lòng chờ...</p>';
+
+  supabaseClient.functions.invoke('analyze-submission', {
+    body: { submission_id: submissionId }
+  }).then(function(res) {
+    btn.disabled = false;
+    btn.textContent = '📝 Phân tích chi tiết (transcript + dịch + lỗi ngữ pháp)';
+    if (res.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
+      return;
+    }
+    var payload = res.data;
+    if (!payload || payload.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
+      return;
+    }
+    renderAnalysisResult(box, payload.data);
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = '📝 Phân tích chi tiết (transcript + dịch + lỗi ngữ pháp)';
+    box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(String(err)) + '</p>';
+  });
+}
+
+function renderAnalysisResult(box, data) {
+  if (!data) { box.innerHTML = '<p class="muted">Không có dữ liệu</p>'; return; }
+  var html = '';
+  html += '<p class="muted" style="margin:0 0 6px 0;">📄 Transcript (nguyên văn):</p>';
+  html += '<p style="margin:0 0 14px 0;font-style:italic;line-height:1.6;">' + escapeHtml(data.transcript || '') + '</p>';
+  html += '<p class="muted" style="margin:0 0 6px 0;">🇻🇳 Bản dịch:</p>';
+  html += '<p style="margin:0 0 14px 0;line-height:1.6;">' + escapeHtml(data.translation_vi || '') + '</p>';
+  html += '<p class="muted" style="margin:0 0 6px 0;">🔍 Phân tích lỗi chi tiết:</p>';
+  html += '<div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.detailed_analysis || '') + '</div>';
   box.innerHTML = html;
 }
 
