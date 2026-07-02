@@ -1419,8 +1419,9 @@ function renderStudentResults(list) {
     var sub = list[i];
     var score = sub.sp_scores ? (Array.isArray(sub.sp_scores) ? sub.sp_scores[0] : sub.sp_scores) : null;
     var assignmentInfo = sub.sp_assignments ? (Array.isArray(sub.sp_assignments) ? sub.sp_assignments[0] : sub.sp_assignments) : null;
-    var isIelts = assignmentInfo && assignmentInfo.type && assignmentInfo.type.indexOf('ielts') === 0;
-    if (!assignmentInfo && sub.practice_type && sub.practice_type.indexOf('ielts') === 0) isIelts = true;
+    var assignmentType = assignmentInfo && assignmentInfo.type ? assignmentInfo.type : '';
+    var practiceType = sub.practice_type || '';
+    var isIelts = (assignmentType.indexOf('ielts') === 0) || (practiceType.indexOf('ielts') === 0);
 
     html += '<div class="card" style="margin-bottom:10px;">';
     html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
