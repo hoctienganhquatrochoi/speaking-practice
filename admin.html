@@ -1364,10 +1364,13 @@ function renderAssignmentsList() {
     html += '<div>';
     html += '<b>' + escapeHtml(a.topic) + '</b>';
     html += ' <span class="pill">' + assignmentTypeLabel(a.type) + '</span>';
-    if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
     if (a._classNames && a._classNames.length > 0) {
       html += '<div class="muted" style="margin-top:6px;">Giao cho lớp: ' + escapeHtml(a._classNames.join(', ')) + '</div>';
     }
+    html += '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;">';
+    html += '<label class="muted" style="margin:0;">Hạn nộp:</label>';
+    html += '<input type="date" value="' + (a.due_date || '') + '" onchange="updateAssignmentDueDate(\'' + a.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
+    html += '</div>';
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;">Bài đọc mẫu: "' + escapeHtml(a.reading_text) + '"</div>';
     if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
@@ -1383,6 +1386,14 @@ function renderAssignmentsList() {
     html += '</div>';
   }
   box.innerHTML = html;
+}
+
+function updateAssignmentDueDate(assignmentId, newDate) {
+  supabaseClient.from('sp_assignments').update({ due_date: newDate || null }).eq('id', assignmentId)
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      showToast(newDate ? 'Đã cập nhật hạn nộp' : 'Đã bỏ hạn nộp');
+    });
 }
 
 function deleteAssignment(id) {
