@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Speaking Practice - Quản trị</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -194,6 +195,7 @@
     <button class="tab-btn active" id="tabBtnClasses" onclick="switchTab('classes')">Lớp học</button>
     <button class="tab-btn" id="tabBtnStudents" onclick="switchTab('students')">Học sinh</button>
     <button class="tab-btn" id="tabBtnAssignments" onclick="switchTab('assignments')">Bài giao</button>
+    <button class="tab-btn" id="tabBtnResults" onclick="switchTab('results')">Kết quả</button>
   </div>
 
   <!-- TAB: CLASSES -->
@@ -336,6 +338,43 @@
       <div id="assignmentsListBox"></div>
     </div>
   </div>
+
+  <!-- TAB: RESULTS -->
+  <div id="tabResults" class="hidden">
+    <div class="card">
+      <h2>Xem theo học sinh</h2>
+      <div class="row">
+        <div class="grow">
+          <label>Lớp</label>
+          <select id="resultsClassSelect" onchange="loadResultsStudents()"></select>
+        </div>
+        <div class="grow">
+          <label>Học sinh</label>
+          <select id="resultsStudentSelect" onchange="loadStudentResults()"></select>
+        </div>
+      </div>
+      <div id="studentResultsBox" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Báo cáo tuần</h2>
+      <div class="row">
+        <div class="grow">
+          <label>Lớp</label>
+          <select id="weeklyReportClassSelect"></select>
+        </div>
+        <div class="grow">
+          <label>Chọn 1 ngày bất kỳ trong tuần cần xem</label>
+          <input type="date" id="weeklyReportWeekDate">
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn-primary" onclick="generateWeeklyReport()">Tạo báo cáo</button>
+        <button class="btn-secondary hidden" id="exportExcelBtn" onclick="exportWeeklyReportExcel()">📊 Xuất Excel</button>
+      </div>
+      <div id="weeklyReportBox" style="margin-top:14px;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: change password -->
@@ -471,16 +510,20 @@ function switchTab(tab) {
   var classesTab = document.getElementById('tabClasses');
   var studentsTab = document.getElementById('tabStudents');
   var assignmentsTab = document.getElementById('tabAssignments');
+  var resultsTab = document.getElementById('tabResults');
   var btnClasses = document.getElementById('tabBtnClasses');
   var btnStudents = document.getElementById('tabBtnStudents');
   var btnAssignments = document.getElementById('tabBtnAssignments');
+  var btnResults = document.getElementById('tabBtnResults');
 
   classesTab.classList.add('hidden');
   studentsTab.classList.add('hidden');
   assignmentsTab.classList.add('hidden');
+  resultsTab.classList.add('hidden');
   btnClasses.classList.remove('active');
   btnStudents.classList.remove('active');
   btnAssignments.classList.remove('active');
+  btnResults.classList.remove('active');
 
   if (tab === 'classes') {
     classesTab.classList.remove('hidden');
@@ -493,6 +536,10 @@ function switchTab(tab) {
     assignmentsTab.classList.remove('hidden');
     btnAssignments.classList.add('active');
     loadClassesForAssignments();
+  } else if (tab === 'results') {
+    resultsTab.classList.remove('hidden');
+    btnResults.classList.add('active');
+    loadResultsClasses();
   }
 }
 
@@ -1313,6 +1360,327 @@ function deleteAssignment(id) {
       var audience = document.getElementById('assignmentAudienceSelect').value;
       loadAssignmentsForAudience(audience);
     });
+}
+
+// =====================================================
+// RESULTS TAB
+// =====================================================
+function loadResultsClasses() {
+  supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
+      var classes = res.data || [];
+      var html = '';
+      for (var i = 0; i < classes.length; i++) {
+        html += '<option value="' + classes[i].id + '">' + escapeHtml(classes[i].name) + '</option>';
+      }
+      document.getElementById('resultsClassSelect').innerHTML = html;
+      document.getElementById('weeklyReportClassSelect').innerHTML = html;
+      if (classes.length > 0) loadResultsStudents();
+    });
+}
+
+function loadResultsStudents() {
+  var classId = document.getElementById('resultsClassSelect').value;
+  if (!classId) return;
+  supabaseClient.from('sp_students').select('*').eq('class_id', classId).order('name', { ascending: true })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải học sinh: ' + res.error.message); return; }
+      var students = res.data || [];
+      var html = '';
+      for (var i = 0; i < students.length; i++) {
+        html += '<option value="' + students[i].id + '">' + escapeHtml(students[i].name) + '</option>';
+      }
+      document.getElementById('resultsStudentSelect').innerHTML = html;
+      if (students.length > 0) loadStudentResults();
+      else document.getElementById('studentResultsBox').innerHTML = '<p class="muted">Lớp này chưa có học sinh</p>';
+    });
+}
+
+function loadStudentResults() {
+  var studentId = document.getElementById('resultsStudentSelect').value;
+  if (!studentId) return;
+  var box = document.getElementById('studentResultsBox');
+  box.innerHTML = '<p class="muted">Đang tải...</p>';
+  supabaseClient.from('sp_submissions').select('*, sp_scores(*), sp_assignments(topic,type)').eq('student_id', studentId)
+    .order('submitted_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải kết quả: ' + res.error.message); return; }
+      renderStudentResults(res.data || []);
+    });
+}
+
+function renderStudentResults(list) {
+  var box = document.getElementById('studentResultsBox');
+  if (list.length === 0) { box.innerHTML = '<p class="muted">Học sinh chưa nộp bài nào</p>'; return; }
+
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var sub = list[i];
+    var score = sub.sp_scores ? (Array.isArray(sub.sp_scores) ? sub.sp_scores[0] : sub.sp_scores) : null;
+    var assignmentInfo = sub.sp_assignments ? (Array.isArray(sub.sp_assignments) ? sub.sp_assignments[0] : sub.sp_assignments) : null;
+    var isIelts = assignmentInfo && assignmentInfo.type && assignmentInfo.type.indexOf('ielts') === 0;
+    if (!assignmentInfo && sub.practice_type && sub.practice_type.indexOf('ielts') === 0) isIelts = true;
+
+    html += '<div class="card" style="margin-bottom:10px;">';
+    html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
+    html += '<div><b>' + formatDateAdmin(sub.submitted_at) + '</b>';
+    if (assignmentInfo && assignmentInfo.topic) html += ' <span class="pill">' + escapeHtml(assignmentInfo.topic) + '</span>';
+    html += '</div>';
+    html += statusBadgeAdmin(sub.status);
+    html += '</div>';
+
+    if (sub.status === 'graded' && score) {
+      var scoreLabel = score.overall_score !== null ? score.overall_score : '-';
+      scoreLabel = isIelts ? ('Band ' + scoreLabel) : (scoreLabel + '/10');
+      html += '<div style="margin-top:8px;font-size:20px;font-weight:700;color:#9db4ff;">' + scoreLabel + '</div>';
+      html += '<div style="margin-top:8px;line-height:1.6;white-space:pre-wrap;font-size:14px;">' + escapeHtml(addFeedbackIconsAdmin(score.detailed_feedback || '')) + '</div>';
+      if (score.goal_suggestion) html += '<div class="muted" style="margin-top:8px;">🎯 Mục tiêu tiếp theo: ' + escapeHtml(score.goal_suggestion) + '</div>';
+    } else if (sub.status === 'invalid') {
+      html += '<div class="muted" style="margin-top:8px;">' + escapeHtml((score && score.invalid_reason) || 'Bài không hợp lệ') + '</div>';
+    } else if (sub.status === 'processing') {
+      html += '<div class="muted" style="margin-top:8px;">Đang chấm...</div>';
+    } else {
+      html += '<div class="muted" style="margin-top:8px;">Có lỗi khi chấm bài này</div>';
+    }
+
+    if (sub.video_url) {
+      html += '<audio controls src="' + sub.video_url + '" style="width:100%;margin-top:10px;"></audio>';
+    }
+    if (sub.reference_image_url) {
+      html += '<img src="' + sub.reference_image_url + '" style="max-width:200px;border-radius:8px;margin-top:10px;">';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function statusBadgeAdmin(status) {
+  if (status === 'graded') return '<span class="pill" style="background:#1e3a2a;color:#7de3a0;">Đã chấm</span>';
+  if (status === 'invalid') return '<span class="pill" style="background:#4a2030;color:#ff9db0;">Không hợp lệ</span>';
+  if (status === 'processing') return '<span class="pill" style="background:#3a3220;color:#ffcf6b;">Đang chấm</span>';
+  return '<span class="pill" style="background:#4a2030;color:#ff9db0;">Lỗi</span>';
+}
+
+function formatDateAdmin(iso) {
+  var d = new Date(iso);
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  var hh = String(d.getHours()).padStart(2, '0');
+  var mi = String(d.getMinutes()).padStart(2, '0');
+  return dd + '/' + mm + '/' + yyyy + ' ' + hh + ':' + mi;
+}
+
+function addFeedbackIconsAdmin(text) {
+  if (!text) return text;
+  var iconMap = [
+    ['Nội dung:', '📝 Nội dung:'], ['Từ vựng:', '📚 Từ vựng:'], ['Ngữ pháp:', '✏️ Ngữ pháp:'],
+    ['Phát âm:', '🗣️ Phát âm:'], ['Tự tin:', '💪 Tự tin:'], ['Đọc đúng bài:', '📖 Đọc đúng bài:'],
+    ['Trôi chảy & Mạch lạc:', '🌊 Trôi chảy & Mạch lạc:'], ['Trôi chảy:', '🌊 Trôi chảy:'],
+    ['Vốn từ vựng:', '📚 Vốn từ vựng:'], ['Ngữ pháp (đa dạng & chính xác):', '✏️ Ngữ pháp (đa dạng & chính xác):'],
+    ['Lời khen:', '🌟 Lời khen:']
+  ];
+  var result = text;
+  for (var j = 0; j < iconMap.length; j++) {
+    (function(label, replacement) {
+      var escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var regex = new RegExp('(^|\\n)' + escapedLabel, 'g');
+      result = result.replace(regex, function(match, p1) { return p1 + replacement; });
+    })(iconMap[j][0], iconMap[j][1]);
+  }
+  return result;
+}
+
+// =====================================================
+// WEEKLY REPORT
+// =====================================================
+var lastWeeklyReportData = null;
+
+function getWeekRange(dateStr) {
+  var d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+  var day = d.getDay(); // 0=CN, 1=T2...
+  var diffToMonday = (day === 0) ? -6 : (1 - day);
+  var monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  var sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { start: monday, end: sunday };
+}
+
+function formatShortDate(d) {
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  return dd + '/' + mm;
+}
+
+function generateWeeklyReport() {
+  var classId = document.getElementById('weeklyReportClassSelect').value;
+  var weekDateInput = document.getElementById('weeklyReportWeekDate').value;
+  if (!classId) { showToast('Chưa chọn lớp'); return; }
+  if (!weekDateInput) { showToast('Chưa chọn ngày trong tuần cần xem'); return; }
+
+  var box = document.getElementById('weeklyReportBox');
+  box.innerHTML = '<p class="muted">Đang tạo báo cáo...</p>';
+  document.getElementById('exportExcelBtn').classList.add('hidden');
+
+  var thisWeek = getWeekRange(weekDateInput);
+  var prevWeekDate = new Date(thisWeek.start);
+  prevWeekDate.setDate(prevWeekDate.getDate() - 7);
+  var prevWeek = getWeekRange(prevWeekDate.toISOString().slice(0, 10));
+
+  supabaseClient.from('sp_students').select('id, name').eq('class_id', classId)
+    .then(function(studentsRes) {
+      if (studentsRes.error) { showToast('Lỗi tải học sinh: ' + studentsRes.error.message); return; }
+      var students = studentsRes.data || [];
+      var studentIds = students.map(function(s) { return s.id; });
+      if (studentIds.length === 0) { box.innerHTML = '<p class="muted">Lớp chưa có học sinh</p>'; return; }
+
+      var thisWeekQuery = supabaseClient.from('sp_submissions')
+        .select('student_id, submitted_at, status, sp_scores(overall_score, short_summary)')
+        .in('student_id', studentIds)
+        .eq('status', 'graded')
+        .gte('submitted_at', thisWeek.start.toISOString())
+        .lte('submitted_at', thisWeek.end.toISOString());
+
+      var prevWeekQuery = supabaseClient.from('sp_submissions')
+        .select('student_id, sp_scores(overall_score)')
+        .in('student_id', studentIds)
+        .eq('status', 'graded')
+        .gte('submitted_at', prevWeek.start.toISOString())
+        .lte('submitted_at', prevWeek.end.toISOString());
+
+      Promise.all([thisWeekQuery, prevWeekQuery]).then(function(results) {
+        var thisRes = results[0];
+        var prevRes = results[1];
+        if (thisRes.error) { showToast('Lỗi: ' + thisRes.error.message); return; }
+
+        var byStudent = {};
+        var thisRows = thisRes.data || [];
+        for (var i = 0; i < thisRows.length; i++) {
+          var r = thisRows[i];
+          var sid = r.student_id;
+          if (!byStudent[sid]) byStudent[sid] = { subs: [], sumScore: 0, count: 0, days: {} };
+          var sc = r.sp_scores ? (Array.isArray(r.sp_scores) ? r.sp_scores[0] : r.sp_scores) : null;
+          var scoreVal = sc && sc.overall_score !== null ? sc.overall_score : null;
+          byStudent[sid].subs.push({ date: r.submitted_at, score: scoreVal, summary: sc ? sc.short_summary : '' });
+          if (scoreVal !== null) { byStudent[sid].sumScore += scoreVal; byStudent[sid].count++; }
+          byStudent[sid].days[r.submitted_at.slice(0, 10)] = true;
+        }
+
+        var prevAvgByStudent = {};
+        var prevRows = (prevRes && !prevRes.error) ? (prevRes.data || []) : [];
+        var prevSum = {}, prevCount = {};
+        for (var j = 0; j < prevRows.length; j++) {
+          var pr = prevRows[j];
+          var psc = pr.sp_scores ? (Array.isArray(pr.sp_scores) ? pr.sp_scores[0] : pr.sp_scores) : null;
+          if (psc && psc.overall_score !== null) {
+            prevSum[pr.student_id] = (prevSum[pr.student_id] || 0) + psc.overall_score;
+            prevCount[pr.student_id] = (prevCount[pr.student_id] || 0) + 1;
+          }
+        }
+        for (var sid2 in prevSum) prevAvgByStudent[sid2] = prevSum[sid2] / prevCount[sid2];
+
+        var reportData = [];
+        for (var k = 0; k < students.length; k++) {
+          var st = students[k];
+          var data = byStudent[st.id];
+          if (!data || data.subs.length === 0) continue; // chỉ báo cáo học sinh đã nộp bài
+
+          data.subs.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+          var avgScore = data.count > 0 ? Math.round((data.sumScore / data.count) * 10) / 10 : null;
+          var prevAvg = prevAvgByStudent[st.id] !== undefined ? Math.round(prevAvgByStudent[st.id] * 10) / 10 : null;
+          var activeDays = Object.keys(data.days).length;
+
+          reportData.push({
+            studentName: st.name,
+            totalSubs: data.subs.length,
+            activeDays: activeDays,
+            avgScore: avgScore,
+            prevAvg: prevAvg,
+            subs: data.subs
+          });
+        }
+
+        lastWeeklyReportData = {
+          weekStart: thisWeek.start,
+          weekEnd: thisWeek.end,
+          rows: reportData
+        };
+        renderWeeklyReport(lastWeeklyReportData);
+        if (reportData.length > 0) document.getElementById('exportExcelBtn').classList.remove('hidden');
+      });
+    });
+}
+
+function renderWeeklyReport(data) {
+  var box = document.getElementById('weeklyReportBox');
+  if (data.rows.length === 0) {
+    box.innerHTML = '<p class="muted">Không có học sinh nào nộp bài trong tuần này (' + formatShortDate(data.weekStart) + ' - ' + formatShortDate(data.weekEnd) + ')</p>';
+    return;
+  }
+  var html = '<p class="muted">Tuần ' + formatShortDate(data.weekStart) + ' - ' + formatShortDate(data.weekEnd) + '</p>';
+  for (var i = 0; i < data.rows.length; i++) {
+    var row = data.rows[i];
+    html += '<div class="card" style="margin-bottom:10px;">';
+    html += '<b>' + escapeHtml(row.studentName) + '</b>';
+    html += '<div class="muted" style="margin-top:4px;">Tổng số bài nộp: ' + row.totalSubs + ' (nộp trong ' + row.activeDays + '/7 ngày)</div>';
+    if (row.avgScore !== null) {
+      var trend = '';
+      if (row.prevAvg !== null) {
+        trend = row.avgScore > row.prevAvg ? ' (↑ so với ' + row.prevAvg + ' tuần trước)'
+          : (row.avgScore < row.prevAvg ? ' (↓ so với ' + row.prevAvg + ' tuần trước)' : ' (= tuần trước)');
+      }
+      html += '<div style="margin-top:4px;">📊 Điểm trung bình tuần: <b>' + row.avgScore + '</b>' + trend + '</div>';
+    }
+    html += '<div style="margin-top:8px;">';
+    for (var j = 0; j < row.subs.length; j++) {
+      var s = row.subs[j];
+      var d = new Date(s.date);
+      html += '<div class="muted" style="margin-top:4px;font-size:13px;">📅 ' + formatShortDate(d) + ' — ' + escapeHtml(s.summary || (s.score !== null ? ('Điểm: ' + s.score) : '')) + '</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function exportWeeklyReportExcel() {
+  if (!lastWeeklyReportData || lastWeeklyReportData.rows.length === 0) { showToast('Chưa có dữ liệu báo cáo'); return; }
+  if (typeof XLSX === 'undefined') { showToast('Chưa tải được thư viện xuất Excel, thử lại sau'); return; }
+
+  var data = lastWeeklyReportData;
+  var sheetRows = [];
+  sheetRows.push(['Học sinh', 'Số bài nộp', 'Số ngày hoạt động', 'Điểm TB tuần', 'Điểm TB tuần trước', 'Ngày', 'Tóm tắt']);
+
+  for (var i = 0; i < data.rows.length; i++) {
+    var row = data.rows[i];
+    if (row.subs.length === 0) {
+      sheetRows.push([row.studentName, row.totalSubs, row.activeDays, row.avgScore, row.prevAvg, '', '']);
+    } else {
+      for (var j = 0; j < row.subs.length; j++) {
+        var s = row.subs[j];
+        var d = new Date(s.date);
+        sheetRows.push([
+          j === 0 ? row.studentName : '',
+          j === 0 ? row.totalSubs : '',
+          j === 0 ? row.activeDays : '',
+          j === 0 ? row.avgScore : '',
+          j === 0 ? row.prevAvg : '',
+          formatShortDate(d),
+          s.summary || ''
+        ]);
+      }
+    }
+  }
+
+  var ws = XLSX.utils.aoa_to_sheet(sheetRows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo tuần');
+  var fileName = 'bao-cao-tuan-' + formatShortDate(data.weekStart).replace('/', '-') + '_' + formatShortDate(data.weekEnd).replace('/', '-') + '.xlsx';
+  XLSX.writeFile(wb, fileName);
 }
 
 initApp();
