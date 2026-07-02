@@ -508,8 +508,62 @@ function loadStudents() {
     });
 }
 
+var autoSaveTimers = {};
+
 function updateStudentField(index, field, value) {
-  if (currentStudents[index]) currentStudents[index][field] = value;
+  if (!currentStudents[index]) return;
+  currentStudents[index][field] = value;
+  if (autoSaveTimers[index]) clearTimeout(autoSaveTimers[index]);
+  autoSaveTimers[index] = setTimeout(function() {
+    autoSaveStudentRow(index);
+  }, 900);
+}
+
+function autoSaveStudentRow(index) {
+  var classId = document.getElementById('classSelect').value;
+  var s = currentStudents[index];
+  if (!s || !classId) return;
+  if (!s.name || !s.name.trim()) return; // chưa có tên thì chưa lưu
+
+  var dobIso = convertDateToIso(s.dobDisplay);
+
+  if (s.id) {
+    supabaseClient.from('sp_students').update({
+      name: s.name.trim(),
+      dob: dobIso,
+      parent_name: s.parent_name || null,
+      parent_phone: s.parent_phone || null
+    }).eq('id', s.id).then(function(res) {
+      if (res.error) showToast('Lỗi lưu: ' + res.error.message);
+    });
+  } else {
+    if (s._saving) return; // tránh tạo trùng nếu đang lưu dở
+    s._saving = true;
+    generateUniqueUsername(s.name, function(username) {
+      var record = {
+        class_id: classId,
+        name: s.name.trim(),
+        username: username,
+        password: '123456',
+        dob: dobIso,
+        parent_name: s.parent_name || null,
+        parent_phone: s.parent_phone || null
+      };
+      supabaseClient.from('sp_students').insert(record).select().single().then(function(res) {
+        s._saving = false;
+        if (res.error) { showToast('Lỗi lưu: ' + res.error.message); return; }
+        s.id = res.data.id;
+        s.username = res.data.username;
+        var userCell = document.getElementById('studentUsernameCell_' + index);
+        var actionsCell = document.getElementById('studentActionsCell_' + index);
+        if (userCell) userCell.innerHTML = '<span class="pill">' + escapeHtml(s.username) + '</span>';
+        if (actionsCell) {
+          actionsCell.innerHTML = '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> <button class="btn-danger btn-sm" onclick="deleteStudentRow(' + index + ')">Xóa</button>';
+        }
+        showToast('Đã tạo tài khoản ' + s.name.trim() + ': ' + username + ' / 123456');
+      });
+    });
+  }
 }
 
 function addEmptyStudentRow() {
@@ -526,14 +580,14 @@ function renderStudentsTable() {
     var s = currentStudents[i];
     if (searchVal && s.name.toLowerCase().indexOf(searchVal) === -1) continue;
     shown++;
-    html += '<tr>';
+    html += '<tr id="studentRow_' + i + '">';
     html += '<td class="muted">' + shown + '</td>';
     html += '<td><input type="text" value="' + escapeHtml(s.name) + '" placeholder="Tên học sinh *" oninput="updateStudentField(' + i + ',\'name\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.dobDisplay) + '" placeholder="dd/mm/yyyy" oninput="updateStudentField(' + i + ',\'dobDisplay\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.parent_phone) + '" placeholder="0912xxxxxx" oninput="updateStudentField(' + i + ',\'parent_phone\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.parent_name) + '" placeholder="Tên PH" oninput="updateStudentField(' + i + ',\'parent_name\',this.value)"></td>';
-    html += '<td>' + (s.username ? '<span class="pill">' + escapeHtml(s.username) + '</span>' : '<span class="muted">Chưa lưu</span>') + '</td>';
-    html += '<td>';
+    html += '<td id="studentUsernameCell_' + i + '">' + (s.username ? '<span class="pill">' + escapeHtml(s.username) + '</span>' : '<span class="muted">Chưa lưu</span>') + '</td>';
+    html += '<td id="studentActionsCell_' + i + '">';
     if (s.id) html += '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> ';
     html += '<button class="btn-danger btn-sm" onclick="deleteStudentRow(' + i + ')">Xóa</button>';
     html += '</td>';
