@@ -264,14 +264,24 @@
 
     <div class="card">
       <h2>Tạo bài giao mới</h2>
+      <label>Loại bài</label>
+      <select id="newAssignmentType" onchange="onAssignmentTypeChange()">
+        <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
+        <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
+        <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
+      </select>
+      <div id="readingTextBlock" class="hidden">
+        <label>Nội dung bài đọc mẫu (bắt buộc cho loại này — dán nguyên văn để Gemini đối chiếu)</label>
+        <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
+      </div>
       <label>Chủ đề</label>
       <input type="text" id="newAssignmentTopic" placeholder="VD: So sánh 2 bức tranh Unit 2 - Playtime">
       <label>Mô tả thêm (tùy chọn)</label>
       <textarea id="newAssignmentDescription" rows="3" placeholder="Yêu cầu chi tiết cho học sinh..."></textarea>
       <label>Hạn nộp (tùy chọn)</label>
       <input type="date" id="newAssignmentDueDate">
-      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh)</label>
-      <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn ảnh</label>
+      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, hoặc danh sách từ vựng)</label>
+      <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
       <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
       <button class="btn-primary" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
     </div>
@@ -912,27 +922,92 @@ function loadClassesForAssignments() {
     });
 }
 
+function onAssignmentTypeChange() {
+  var type = document.getElementById('newAssignmentType').value;
+  var block = document.getElementById('readingTextBlock');
+  if (type === 'reading') block.classList.remove('hidden');
+  else block.classList.add('hidden');
+}
+
 function onAssignmentImageSelected() {
   var input = document.getElementById('assignmentImageInput');
-  var label = document.getElementById('assignmentImageLabel');
   if (input.files && input.files.length > 0) {
-    selectedAssignmentImage = input.files[0];
-    label.textContent = '✅ ' + selectedAssignmentImage.name;
+    setAssignmentImageFile(input.files[0]);
+  } else {
+    setAssignmentImageFile(null);
+  }
+}
+
+function setAssignmentImageFile(file) {
+  var label = document.getElementById('assignmentImageLabel');
+  if (file) {
+    selectedAssignmentImage = file;
+    label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
   } else {
     selectedAssignmentImage = null;
-    label.textContent = '🖼️ Bấm để chọn ảnh';
+    label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
     label.classList.remove('has-file');
   }
 }
+
+// Dán ảnh bằng Ctrl+V (khi đang ở trong khu vực tạo bài giao)
+document.addEventListener('paste', function(e) {
+  var assignmentCard = document.getElementById('assignmentImageLabel');
+  if (!assignmentCard) return;
+  var assignmentsTabVisible = !document.getElementById('tabAssignments').classList.contains('hidden');
+  if (!assignmentsTabVisible) return;
+  if (!e.clipboardData || !e.clipboardData.items) return;
+  for (var i = 0; i < e.clipboardData.items.length; i++) {
+    var item = e.clipboardData.items[i];
+    if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+      var file = item.getAsFile();
+      setAssignmentImageFile(file);
+      showToast('Đã dán ảnh');
+      break;
+    }
+  }
+});
+
+// Kéo thả ảnh vào ô chọn ảnh
+(function setupAssignmentDragDrop() {
+  document.addEventListener('DOMContentLoaded', function() {});
+  var label = null;
+  function bind() {
+    label = document.getElementById('assignmentImageLabel');
+    if (!label) return;
+    label.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      label.style.borderColor = '#4c6fff';
+    });
+    label.addEventListener('dragleave', function(e) {
+      label.style.borderColor = '';
+    });
+    label.addEventListener('drop', function(e) {
+      e.preventDefault();
+      label.style.borderColor = '';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        setAssignmentImageFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
 
 function addAssignment() {
   var classId = document.getElementById('assignmentClassSelect').value;
   var topic = document.getElementById('newAssignmentTopic').value.trim();
   var description = document.getElementById('newAssignmentDescription').value.trim();
   var dueDate = document.getElementById('newAssignmentDueDate').value;
+  var type = document.getElementById('newAssignmentType').value;
+  var readingText = document.getElementById('newAssignmentReadingText').value.trim();
   if (!classId) { showToast('Chưa chọn lớp'); return; }
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
+  if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
 
   function insertAssignment(imageUrl) {
     supabaseClient.from('sp_assignments').insert({
@@ -940,24 +1015,24 @@ function addAssignment() {
       topic: topic,
       description: description || null,
       due_date: dueDate || null,
-      reference_image_url: imageUrl || null
+      reference_image_url: imageUrl || null,
+      type: type,
+      reading_text: type === 'reading' ? readingText : null
     }).then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       showToast('Đã tạo bài giao');
       document.getElementById('newAssignmentTopic').value = '';
       document.getElementById('newAssignmentDescription').value = '';
       document.getElementById('newAssignmentDueDate').value = '';
-      selectedAssignmentImage = null;
+      document.getElementById('newAssignmentReadingText').value = '';
+      setAssignmentImageFile(null);
       document.getElementById('assignmentImageInput').value = '';
-      var label = document.getElementById('assignmentImageLabel');
-      label.textContent = '🖼️ Bấm để chọn ảnh';
-      label.classList.remove('has-file');
       loadAssignmentsAdmin();
     });
   }
 
   if (selectedAssignmentImage) {
-    var ext = selectedAssignmentImage.name.split('.').pop();
+    var ext = (selectedAssignmentImage.name && selectedAssignmentImage.name.split('.').pop()) || 'png';
     var path = classId + '/' + Date.now() + '.' + ext;
     supabaseClient.storage.from('assignment-images').upload(path, selectedAssignmentImage)
       .then(function(uploadRes) {
@@ -994,8 +1069,11 @@ function renderAssignmentsList() {
     html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
     html += '<div>';
     html += '<b>' + escapeHtml(a.topic) + '</b>';
+    var typeLabel = a.type === 'vocabulary' ? 'Đọc từ vựng' : (a.type === 'reading' ? 'Luyện đọc' : 'Thuyết trình');
+    html += ' <span class="pill">' + typeLabel + '</span>';
     if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
+    if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;">Bài đọc mẫu: "' + escapeHtml(a.reading_text) + '"</div>';
     html += '</div>';
     html += '<button class="btn-danger btn-sm" onclick="deleteAssignment(\'' + a.id + '\')">Xóa</button>';
     html += '</div>';
