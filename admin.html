@@ -288,6 +288,11 @@
     </div>
 
     <div class="card">
+      <h2>Loại trừ học sinh nghỉ học (tick những em không giao bài hôm nay)</h2>
+      <div id="excludeStudentsCheckboxes"><p class="muted">Chọn lớp ở trên trước để hiện danh sách học sinh</p></div>
+    </div>
+
+    <div class="card">
       <h2>Tạo bài giao mới</h2>
       <label>Loại bài</label>
       <select id="newAssignmentType" onchange="onAssignmentTypeChange()">
@@ -1081,17 +1086,50 @@ function renderAssignmentClassCheckboxes() {
   var box = document.getElementById('assignmentClassCheckboxes');
   if (assignmentClassesInKhoi.length === 0) {
     box.innerHTML = '<p class="muted">Khối này chưa có lớp nào</p>';
+    document.getElementById('excludeStudentsCheckboxes').innerHTML = '<p class="muted">Chọn lớp ở trên trước để hiện danh sách học sinh</p>';
     return;
   }
   var html = '';
   for (var i = 0; i < assignmentClassesInKhoi.length; i++) {
     var c = assignmentClassesInKhoi[i];
     html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:normal;cursor:pointer;">';
-    html += '<input type="checkbox" value="' + c.id + '" class="assignment-class-checkbox" style="width:auto;">';
+    html += '<input type="checkbox" value="' + c.id + '" class="assignment-class-checkbox" onchange="loadExcludeStudents()" style="width:auto;">';
     html += '<span>' + escapeHtml(c.name) + '</span>';
     html += '</label>';
   }
   box.innerHTML = html;
+  loadExcludeStudents();
+}
+
+function loadExcludeStudents() {
+  var checkboxes = document.querySelectorAll('.assignment-class-checkbox:checked');
+  var classIds = [];
+  for (var i = 0; i < checkboxes.length; i++) classIds.push(checkboxes[i].value);
+
+  var box = document.getElementById('excludeStudentsCheckboxes');
+  if (classIds.length === 0) {
+    box.innerHTML = '<p class="muted">Chọn lớp ở trên trước để hiện danh sách học sinh</p>';
+    return;
+  }
+
+  supabaseClient.from('sp_students').select('id, name, class_id').in('class_id', classIds).order('name', { ascending: true })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải học sinh: ' + res.error.message); return; }
+      var students = res.data || [];
+      if (students.length === 0) {
+        box.innerHTML = '<p class="muted">Lớp đã chọn chưa có học sinh nào</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < students.length; i++) {
+        var s = students[i];
+        html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:normal;cursor:pointer;">';
+        html += '<input type="checkbox" value="' + s.id + '" class="exclude-student-checkbox" style="width:auto;">';
+        html += '<span>' + escapeHtml(s.name) + '</span>';
+        html += '</label>';
+      }
+      box.innerHTML = html;
+    });
 }
 
 function onAssignmentTypeChange() {
@@ -1197,10 +1235,42 @@ function addAssignment() {
   var selectedClassIds = [];
   for (var c = 0; c < checkboxes.length; c++) selectedClassIds.push(checkboxes[c].value);
 
+  var excludeCheckboxes = document.querySelectorAll('.exclude-student-checkbox:checked');
+  var excludedStudentIds = [];
+  for (var e = 0; e < excludeCheckboxes.length; e++) excludedStudentIds.push(excludeCheckboxes[e].value);
+
   if (selectedClassIds.length === 0) { showToast('Chưa tick lớp nào để giao bài'); return; }
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
   if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
+
+  function insertExclusionsThenFinish(assignmentId) {
+    if (excludedStudentIds.length === 0) { finishAssignmentCreation(); return; }
+    var excludeLinks = [];
+    for (var i = 0; i < excludedStudentIds.length; i++) {
+      excludeLinks.push({ assignment_id: assignmentId, student_id: excludedStudentIds[i] });
+    }
+    supabaseClient.from('sp_assignment_excluded_students').insert(excludeLinks).then(function(exRes) {
+      if (exRes.error) showToast('Lỗi lưu danh sách loại trừ: ' + exRes.error.message);
+      finishAssignmentCreation();
+    });
+  }
+
+  function finishAssignmentCreation() {
+    showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp' + (excludedStudentIds.length > 0 ? ', loại trừ ' + excludedStudentIds.length + ' học sinh' : ''));
+    document.getElementById('newAssignmentTopic').value = '';
+    document.getElementById('newAssignmentDescription').value = '';
+    document.getElementById('newAssignmentDueDate').value = '';
+    document.getElementById('newAssignmentReadingText').value = '';
+    document.getElementById('newAssignmentQuestionsText').value = '';
+    setAssignmentImageFile(null);
+    document.getElementById('assignmentImageInput').value = '';
+    var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
+    for (var k = 0; k < checkedBoxes.length; k++) checkedBoxes[k].checked = false;
+    document.getElementById('excludeStudentsCheckboxes').innerHTML = '<p class="muted">Chọn lớp ở trên trước để hiện danh sách học sinh</p>';
+    var audience = document.getElementById('assignmentAudienceSelect').value;
+    loadAssignmentsForAudience(audience);
+  }
 
   function insertAssignment(imageUrl) {
     supabaseClient.from('sp_assignments').insert({
@@ -1220,18 +1290,7 @@ function addAssignment() {
       }
       supabaseClient.from('sp_assignment_classes').insert(links).then(function(linkRes) {
         if (linkRes.error) { showToast('Lỗi gán lớp: ' + linkRes.error.message); return; }
-        showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp');
-        document.getElementById('newAssignmentTopic').value = '';
-        document.getElementById('newAssignmentDescription').value = '';
-        document.getElementById('newAssignmentDueDate').value = '';
-        document.getElementById('newAssignmentReadingText').value = '';
-        document.getElementById('newAssignmentQuestionsText').value = '';
-        setAssignmentImageFile(null);
-        document.getElementById('assignmentImageInput').value = '';
-        var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
-        for (var k = 0; k < checkedBoxes.length; k++) checkedBoxes[k].checked = false;
-        var audience = document.getElementById('assignmentAudienceSelect').value;
-        loadAssignmentsForAudience(audience);
+        insertExclusionsThenFinish(assignmentId);
       });
     });
   }
