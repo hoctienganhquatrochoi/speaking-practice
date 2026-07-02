@@ -160,10 +160,12 @@
     <label class="file-input-label" id="fileLabel" for="videoFileInput">📹 Bấm để chọn video</label>
     <input type="file" id="videoFileInput" accept="video/*" onchange="onFileSelected()">
 
-    <label>Bài giao</label>
-    <select id="assignmentSelect">
-      <option value="">Bài tự do (không theo bài giao)</option>
-    </select>
+    <div class="hidden" id="assignmentBlock">
+      <label>Bài giao</label>
+      <select id="assignmentSelect">
+        <option value="">Bài tự do (không theo bài giao)</option>
+      </select>
+    </div>
 
     <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
     <p class="muted" id="uploadStatus" style="margin-top:10px;"></p>
@@ -325,6 +327,9 @@ function loadAssignments() {
         html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + '</option>';
       }
       sel.innerHTML = html;
+      var block = document.getElementById('assignmentBlock');
+      if (currentAssignments.length > 0) block.classList.remove('hidden');
+      else block.classList.add('hidden');
     });
 }
 
@@ -363,7 +368,8 @@ function submitVideo() {
     .then(function(uploadRes) {
       if (uploadRes.error) {
         statusEl.textContent = '';
-        showToast('Lỗi tải video: ' + uploadRes.error.message);
+        console.error('Upload error (real reason):', uploadRes.error);
+        showToast('Hệ thống đang xử lý khối lượng bài lớn, vui lòng thử nộp lại video sau ít phút nhé 🙏');
         btn.disabled = false;
         return;
       }
@@ -411,7 +417,10 @@ function loadSubmissions() {
     });
 }
 
+var currentSubmissionsList = [];
+
 function renderSubmissions(list) {
+  currentSubmissionsList = list;
   var box = document.getElementById('submissionsList');
   if (list.length === 0) {
     box.innerHTML = '<p class="muted">Chưa có bài nộp nào</p>';
@@ -429,7 +438,7 @@ function renderSubmissions(list) {
     html += '<div class="sub-item" onclick="toggleDetail(' + i + ')">';
     html += '<div class="sub-item-header">';
     html += '<div><b>' + dateStr + '</b></div>';
-    html += statusBadge(sub.status);
+    html += '<div class="row" style="gap:8px;">' + statusBadge(sub.status) + '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button></div>';
     html += '</div>';
 
     if (sub.status === 'graded' && score) {
@@ -447,10 +456,33 @@ function renderSubmissions(list) {
   box.innerHTML = html;
 }
 
+function deleteSubmission(index) {
+  var sub = currentSubmissionsList[index];
+  if (!sub) return;
+  if (!confirm('Xóa bài nộp này? Không thể khôi phục lại.')) return;
+
+  var afterDbDelete = function() {
+    supabaseClient.from('sp_submissions').delete().eq('id', sub.id).then(function(res) {
+      if (res.error) { showToast('Lỗi xóa: ' + res.error.message); return; }
+      showToast('Đã xóa bài nộp');
+      loadSubmissions();
+    });
+  };
+
+  if (sub.video_path) {
+    supabaseClient.storage.from('speaking-videos').remove([sub.video_path]).then(function() {
+      afterDbDelete();
+    });
+  } else {
+    afterDbDelete();
+  }
+}
+
 function toggleDetail(index) {
   var el = document.getElementById('detail_' + index);
   if (el) el.classList.toggle('hidden');
 }
+
 
 function statusBadge(status) {
   if (status === 'graded') return '<span class="badge badge-graded">Đã chấm</span>';
