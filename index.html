@@ -36,6 +36,16 @@
   .banner-title-blue {
     background: linear-gradient(135deg, #4c6fff, #7b5cff);
   }
+  .btn-gradient-blue {
+    background: linear-gradient(135deg, #4c6fff, #7b5cff);
+    color: #fff;
+    border: none;
+  }
+  .btn-gradient-orange {
+    background: linear-gradient(135deg, #ff8a4c, #ff6b6b);
+    color: #fff;
+    border: none;
+  }
   p.sub { color: #8891a8; margin: 0 0 20px 0; font-size: 14px; }
   input[type=text], input[type=password], select {
     background: #0f1420;
@@ -172,7 +182,7 @@
     <div class="hidden" id="assignmentBlock">
       <p class="banner-title">📋 Các bài tập cần hoàn thành</p>
       <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
-      <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
+      <button class="btn-gradient-blue btn-sm" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
     </div>
 
     <div id="freePracticeBlock" style="margin-top:16px;">
@@ -189,7 +199,7 @@
           <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
         </optgroup>
       </select>
-      <button class="btn-secondary btn-sm hidden" id="backToAssignmentLink" style="margin-top:10px;" onclick="toggleFreeMode(false)">« Quay lại làm theo bài giao</button>
+      <button class="btn-gradient-orange btn-sm hidden" id="backToAssignmentLink" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(false)">« Quay lại làm theo bài giao</button>
 
       <div id="freeImageBlock" style="margin-top:12px;">
         <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, ảnh danh sách từ vựng, hoặc ảnh Cue Card)</label>
