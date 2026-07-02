@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Speaking Practice - Quản trị</title>
+<title>Speaking Practice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
@@ -14,30 +14,48 @@
     color: #e8ebf2;
     min-height: 100vh;
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
   .card {
     background: #171d2e;
     border: 1px solid #2a3350;
     border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
   }
-  h1 { font-size: 22px; margin: 0 0 4px 0; }
-  h2 { font-size: 17px; margin: 0 0 12px 0; color: #9db4ff; }
+  h1 { font-size: 20px; margin: 0 0 4px 0; }
+  h2 { font-size: 16px; margin: 0 0 12px 0; color: #9db4ff; }
+  .banner-title {
+    background: linear-gradient(135deg, #ff8a4c, #ff6b6b);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin: 0 0 14px 0;
+  }
+  .banner-title-blue {
+    background: linear-gradient(135deg, #4c6fff, #7b5cff);
+  }
+  .btn-gradient-blue {
+    background: linear-gradient(135deg, #4c6fff, #7b5cff);
+    color: #fff;
+    border: none;
+  }
+  .btn-gradient-orange {
+    background: linear-gradient(135deg, #ff8a4c, #ff6b6b);
+    color: #fff;
+    border: none;
+  }
   p.sub { color: #8891a8; margin: 0 0 20px 0; font-size: 14px; }
-  input, select, textarea, button {
-    font-family: inherit;
-    font-size: 14px;
-  }
-  input[type=text], input[type=password], input[type=date], select, textarea {
+  input[type=text], input[type=password], select {
     background: #0f1420;
     border: 1px solid #2a3350;
     color: #e8ebf2;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 12px;
     width: 100%;
+    font-size: 15px;
   }
-  input:focus, select:focus, textarea:focus { outline: 2px solid #4c6fff; border-color: #4c6fff; }
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
@@ -46,63 +64,30 @@
     box-shadow: 0 0 0px 1000px #0f1420 inset;
     transition: background-color 9999s ease-in-out 0s;
   }
-  .pwrow { position: relative; }
-  .pwrow input { padding-right: 40px; }
-  .pw-toggle {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    padding: 4px;
-    color: #8891a8;
-    font-size: 13px;
-    cursor: pointer;
-  }
+  input:focus, select:focus { outline: 2px solid #4c6fff; border-color: #4c6fff; }
   label { display: block; font-size: 13px; color: #9db4ff; margin-bottom: 6px; margin-top: 12px; }
   button {
     cursor: pointer;
     border: none;
     border-radius: 8px;
-    padding: 10px 16px;
+    padding: 12px 18px;
     font-weight: 600;
+    font-size: 15px;
   }
   .btn-primary { background: #4c6fff; color: #fff; }
-  .btn-primary:hover { background: #3a5ce0; }
+  .btn-primary:disabled { background: #2a3350; color: #8891a8; cursor: not-allowed; }
   .btn-secondary { background: #2a3350; color: #e8ebf2; }
-  .btn-secondary:hover { background: #363f5f; }
-  .btn-danger { background: #4a2030; color: #ff9db0; }
-  .btn-danger:hover { background: #5c2840; }
-  .btn-sm { padding: 6px 10px; font-size: 12px; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .grow { flex: 1; min-width: 160px; }
-  #loginScreen, #setupScreen {
-    max-width: 380px;
-    margin: 80px auto;
-    text-align: center;
-  }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
   .hidden { display: none !important; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #232b45; font-size: 14px; }
-  th { color: #8891a8; font-weight: 600; font-size: 12px; text-transform: uppercase; }
-  .pill {
-    display: inline-block;
-    background: #23305a;
-    color: #9db4ff;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .pwrow { position: relative; }
+  .pwrow input { padding-right: 40px; }
+  .pw-toggle {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; padding: 4px; color: #8891a8; cursor: pointer;
   }
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .tab-btn {
-    background: #171d2e;
-    color: #8891a8;
-    border: 1px solid #2a3350;
-    padding: 10px 18px;
-    border-radius: 8px;
-  }
-  .tab-btn.active { background: #4c6fff; color: #fff; border-color: #4c6fff; }
+  #loginScreen, #setupScreen { max-width: 360px; margin: 60px auto; text-align: center; }
   .file-input-label {
     display: block;
     border: 2px dashed #2a3350;
@@ -114,275 +99,210 @@
     margin-top: 6px;
   }
   .file-input-label.has-file { border-color: #4c6fff; color: #e8ebf2; }
-  #assignmentImageInput { display: none; }
-  .credbox {
+  #audioFileInput { display: none; }
+  .sub-item {
     background: #0f1420;
-    border: 1px dashed #4c6fff;
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 10px;
-    font-size: 14px;
+    border: 1px solid #232b45;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
   }
-  .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #23305a;
-    color: #e8ebf2;
-    padding: 12px 20px;
-    border-radius: 8px;
-    z-index: 999;
+  .sub-item-header { display: flex; justify-content: space-between; align-items: center; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
   }
-  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .searchrow { margin-bottom: 14px; }
-  .muted { color: #8891a8; font-size: 13px; }
+  .badge-processing { background: #3a3220; color: #ffcf6b; }
+  .badge-graded { background: #1e3a2a; color: #7de3a0; }
+  .badge-invalid { background: #4a2030; color: #ff9db0; }
+  .badge-error { background: #4a2030; color: #ff9db0; }
+  .score-big { font-size: 22px; font-weight: 700; color: #9db4ff; }
+  .detail-box { margin-top: 12px; padding-top: 12px; border-top: 1px solid #232b45; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
   .modal-bg {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-    display: flex; align-items: center; justify-content: center; z-index: 500;
+    display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px;
   }
-  .modal-box {
-    background: #171d2e; border: 1px solid #2a3350; border-radius: 12px;
-    padding: 24px; max-width: 420px; width: 90%;
+  .modal-box { background: #171d2e; border: 1px solid #2a3350; border-radius: 12px; padding: 22px; max-width: 420px; width: 100%; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #23305a; color: #e8ebf2; padding: 12px 20px; border-radius: 8px;
+    z-index: 999; max-width: 90%; text-align: center;
   }
+  .muted { color: #8891a8; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<!-- SETUP: nhập Supabase URL + Anon Key (chỉ 1 lần, lưu vào localStorage) -->
-<div id="setupScreen" class="card hidden">
-  <h1>Thiết lập kết nối</h1>
-  <p class="sub">Nhập thông tin Supabase project (chỉ cần làm 1 lần trên máy này)</p>
-  <label>Project URL</label>
-  <input type="text" id="setupUrl" placeholder="https://xxxxx.supabase.co">
-  <label>Anon Key</label>
-  <input type="text" id="setupKey" placeholder="Anon public key">
-  <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="saveSetup()">Lưu cấu hình</button>
-</div>
-
 <!-- LOGIN -->
 <div id="loginScreen" class="card hidden">
   <h1>🎤 Speaking Practice</h1>
-  <p class="sub">Trang quản trị</p>
-  <label>Mật khẩu Admin</label>
+  <p class="sub">Đăng nhập để nộp bài</p>
+  <label>Tài khoản</label>
+  <input type="text" id="loginUsername" placeholder="Tên đăng nhập" autocapitalize="off">
+  <label>Mật khẩu</label>
   <div class="pwrow">
-    <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" onkeydown="if(event.key==='Enter')doLogin();">
-    <button type="button" class="pw-toggle" id="loginPasswordToggle" onclick="togglePw('loginPassword', 'loginPasswordToggle')">
+    <input type="password" id="loginPassword" placeholder="Mật khẩu" onkeydown="if(event.key==='Enter')doLogin();">
+    <button type="button" class="pw-toggle" id="loginPwToggle" onclick="togglePw('loginPassword','loginPwToggle')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
   </div>
   <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">Đăng nhập</button>
 </div>
 
-<!-- MAIN APP -->
+<!-- MAIN -->
 <div id="mainApp" class="wrap hidden">
   <div class="topbar">
     <div>
-      <h1>🎤 Speaking Practice</h1>
-      <p class="sub" style="margin:0;">Trang quản trị</p>
+      <h1 id="welcomeName">🎤 Speaking Practice</h1>
     </div>
     <div class="row">
-      <button class="btn-secondary btn-sm" onclick="openChangePasswordModal()">Đổi mật khẩu</button>
+      <button class="btn-secondary btn-sm" onclick="openChangePwModal()">Đổi MK</button>
       <button class="btn-secondary btn-sm" onclick="doLogout()">Đăng xuất</button>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" id="tabBtnClasses" onclick="switchTab('classes')">Lớp học</button>
-    <button class="tab-btn" id="tabBtnStudents" onclick="switchTab('students')">Học sinh</button>
-    <button class="tab-btn" id="tabBtnAssignments" onclick="switchTab('assignments')">Bài giao</button>
-  </div>
+  <div class="card">
+    <h2>Nộp bài mới</h2>
 
-  <!-- TAB: CLASSES -->
-  <div id="tabClasses">
-    <div class="card">
-      <h2>Thêm lớp mới</h2>
-      <div class="row">
-        <div class="grow">
-          <label>Tên lớp</label>
-          <input type="text" id="newClassName" placeholder="VD: Family and Friends 1 - Sáng T2-T4">
-        </div>
-        <div class="grow">
-          <label>Giáo trình</label>
-          <input type="text" id="newClassCurriculum" placeholder="VD: Family and Friends 1">
-        </div>
-      </div>
-      <label>Đối tượng (quyết định khung chấm + giọng nhận xét)</label>
-      <select id="newClassAudience">
-        <option value="elementary">Tiểu học</option>
-        <option value="middle">Cấp 2</option>
-        <option value="high">Cấp 3</option>
-        <option value="ielts">IELTS</option>
-      </select>
-      <button class="btn-primary" style="margin-top:14px;" onclick="addClass()">+ Thêm lớp</button>
+    <div class="hidden" id="assignmentBlock">
+      <p class="banner-title">📋 Các bài tập cần hoàn thành</p>
+      <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
+      <button class="btn-gradient-blue btn-sm" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
     </div>
 
-    <div class="card">
-      <h2>Danh sách lớp</h2>
-      <table>
-        <thead><tr><th>Tên lớp</th><th>Giáo trình</th><th>Đối tượng</th><th>Số học sinh</th><th></th></tr></thead>
-        <tbody id="classesTableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TAB: STUDENTS -->
-  <div id="tabStudents" class="hidden">
-    <div class="card">
-      <h2>Chọn lớp</h2>
-      <select id="classSelect" onchange="loadStudents()"></select>
-    </div>
-
-    <div class="card">
-      <h2>Thêm học sinh (dán danh sách nhanh)</h2>
-      <p class="muted">Copy bảng học sinh từ Excel/Google Sheets/hocphi-manager rồi dán vào đây. Thứ tự cột: Tên | Ngày sinh | SĐT Zalo | Phụ huynh. Chỉ tạo tài khoản cho học sinh có đủ cả 4 thông tin.</p>
-      <textarea id="pasteArea" rows="4" placeholder="Dán danh sách vào đây..."></textarea>
-      <button class="btn-primary" style="margin-top:10px;" onclick="parsePastedList()">Xem trước</button>
-      <div id="pasteSkippedBox" class="hidden" style="margin-top:14px;color:#ffb86b;font-size:13px;"></div>
-      <div id="pastePreviewBox" class="hidden" style="margin-top:14px;">
-        <table>
-          <thead><tr><th>Tên</th><th>Ngày sinh</th><th>SĐT Zalo</th><th>Phụ huynh</th></tr></thead>
-          <tbody id="pastePreviewBody"></tbody>
-        </table>
-        <button class="btn-primary" style="margin-top:10px;" onclick="confirmBulkImport()">Tạo tài khoản cho tất cả</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between;">
-        <h2 style="margin:0;">Danh sách học sinh</h2>
-        <div class="row">
-          <button class="btn-secondary btn-sm" onclick="addEmptyStudentRow()">+ Thêm hàng</button>
-          <button class="btn-primary btn-sm" onclick="saveAllStudents()">💾 Lưu tất cả</button>
-        </div>
-      </div>
-      <div class="searchrow" style="margin-top:14px;">
-        <input type="text" id="studentSearch" placeholder="Tìm theo tên..." oninput="renderStudentsTable()">
-      </div>
-      <table>
-        <thead><tr>
-          <th style="width:26px;">#</th>
-          <th>Tên học sinh *</th>
-          <th style="width:130px;">Ngày sinh</th>
-          <th style="width:130px;">SĐT Zalo</th>
-          <th>Phụ huynh</th>
-          <th>Tài khoản</th>
-          <th style="width:160px;">Chuyển lớp</th>
-          <th style="width:150px;"></th>
-        </tr></thead>
-        <tbody id="studentsTableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TAB: ASSIGNMENTS -->
-  <div id="tabAssignments" class="hidden">
-    <div class="card">
-      <h2>Chọn khối</h2>
-      <select id="assignmentAudienceSelect" onchange="onAssignmentAudienceChange()">
-        <option value="elementary">Tiểu học</option>
-        <option value="middle">Cấp 2</option>
-        <option value="high">Cấp 3</option>
-        <option value="ielts">IELTS</option>
-      </select>
-      <p class="muted" id="assignmentClassAudienceNote" style="margin-top:8px;"></p>
-    </div>
-
-    <div class="card">
-      <h2>Chọn lớp áp dụng (tick 1 hoặc nhiều lớp trong khối này)</h2>
-      <div id="assignmentClassCheckboxes"></div>
-    </div>
-
-    <div class="card">
-      <h2>Tạo bài giao mới</h2>
-      <label>Loại bài</label>
-      <select id="newAssignmentType" onchange="onAssignmentTypeChange()">
-        <optgroup label="" id="optgroupGeneral">
-          <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
-          <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
-          <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
+    <div id="freePracticeBlock" style="margin-top:16px;">
+      <p class="banner-title banner-title-blue" id="freePracticeLabel">Học sinh tự luyện</p>
+      <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
+        <optgroup label="" id="freeOptgroupGeneral">
+          <option value="presentation">Thuyết trình theo tranh</option>
+          <option value="vocabulary">Luyện từ vựng</option>
+          <option value="reading">Luyện đọc</option>
         </optgroup>
-        <optgroup label="" id="optgroupIelts">
+        <optgroup label="" id="freeOptgroupIelts">
           <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
-          <option value="ielts_part2">IELTS Part 2 — Cue Card (nói độc thoại 1-2 phút)</option>
+          <option value="ielts_part2">IELTS Part 2 — Cue Card</option>
           <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
         </optgroup>
       </select>
-      <div id="readingTextBlock" class="hidden">
-        <label>Nội dung bài đọc mẫu (bắt buộc cho loại này — dán nguyên văn để Gemini đối chiếu)</label>
-        <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
+      <button class="btn-gradient-orange btn-sm hidden" id="backToAssignmentLink" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(false)">« Quay lại làm theo bài giao</button>
+
+      <div id="freeImageBlock" style="margin-top:12px;">
+        <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, ảnh danh sách từ vựng, hoặc ảnh Cue Card)</label>
+        <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
+        <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
       </div>
-      <div id="questionsTextBlock" class="hidden">
-        <label>Danh sách câu hỏi (mỗi câu 1 dòng — học sinh sẽ đọc và trả lời lần lượt trong 1 lần ghi âm)</label>
-        <textarea id="newAssignmentQuestionsText" rows="5" placeholder="VD:&#10;What is your hometown like?&#10;Do you work or study?&#10;What do you usually do in your free time?"></textarea>
+
+      <div id="freeReadingTextBlock" class="hidden" style="margin-top:12px;">
+        <label id="freeReadingTextLabel">Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)</label>
+        <textarea id="freeReadingTextInput" rows="4" placeholder="Dán đoạn văn con đang đọc..."></textarea>
       </div>
-      <label>Chủ đề <span class="muted" id="topicHintText">(VD: So sánh 2 bức tranh Unit 2 - Playtime)</span></label>
-      <input type="text" id="newAssignmentTopic" placeholder="VD: So sánh 2 bức tranh Unit 2 - Playtime">
-      <label>Mô tả thêm <span class="muted" id="descriptionHintText">(tùy chọn)</span></label>
-      <textarea id="newAssignmentDescription" rows="3" placeholder="Yêu cầu chi tiết cho học sinh..."></textarea>
-      <label>Hạn nộp (tùy chọn)</label>
-      <input type="date" id="newAssignmentDueDate">
-      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, danh sách từ vựng, hoặc ảnh Cue Card)</label>
-      <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
-      <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
-      <button class="btn-primary" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
+    </div>
+    <div id="assignmentDescriptionPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;">
+      <p id="assignmentDescriptionPreviewContent" style="margin:0;line-height:1.6;white-space:pre-wrap;"></p>
+    </div>
+    <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
+      <p class="muted">Ảnh đề bài của bài giao này:</p>
+      <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
+    </div>
+    <div id="readingTextPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
+      <p class="muted" id="readingTextPreviewLabel" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
+      <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;"></p>
     </div>
 
-    <div class="card">
-      <h2>Danh sách bài giao</h2>
-      <div id="assignmentsListBox"></div>
+    <div id="recordBlock" style="margin-top:20px;padding-top:16px;border-top:1px solid #232b45;">
+      <label>🎙️ Đọc/nói đúng nội dung ở trên, rồi ghi âm tại đây</label>
+      <div class="row" style="gap:10px;">
+        <button class="btn-primary" id="recordBtn" onclick="toggleRecording()">🎙️ Bắt đầu ghi âm</button>
+        <span id="recordTimer" class="muted hidden">00:00</span>
+      </div>
+      <div id="playbackBlock" class="hidden" style="margin-top:12px;">
+        <audio id="playbackAudio" controls style="width:100%;"></audio>
+        <button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="reRecord()">🔁 Ghi lại</button>
+      </div>
     </div>
+
+    <div style="margin-top:16px;">
+      <label>Hoặc chọn file ghi âm có sẵn trong máy</label>
+      <label class="file-input-label" id="fileLabel" for="audioFileInput">🎵 Bấm để chọn file ghi âm</label>
+      <input type="file" id="audioFileInput" accept="audio/*" onchange="onFileSelected()">
+    </div>
+
+    <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
+    <p class="muted" id="uploadStatus" style="margin-top:10px;"></p>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <h2 style="margin:0;">Bài đã nộp</h2>
+      <button class="btn-secondary btn-sm" onclick="loadSubmissions()">🔄 Kiểm tra ngay</button>
+    </div>
+    <p class="muted" style="margin-top:4px;">Bài "Đang chấm" sẽ tự động cập nhật, không cần bấm nút này.</p>
+    <div id="submissionsList" style="margin-top:14px;"></div>
   </div>
 </div>
 
 <!-- MODAL: change password -->
-<div id="changePasswordModal" class="modal-bg hidden">
+<div id="changePwModal" class="modal-bg hidden">
   <div class="modal-box">
-    <h2>Đổi mật khẩu Admin</h2>
+    <h2>Đổi mật khẩu</h2>
     <label>Mật khẩu mới</label>
     <div class="pwrow">
-      <input type="password" id="newAdminPassword" placeholder="Nhập mật khẩu mới">
-      <button type="button" class="pw-toggle" id="newAdminPasswordToggle" onclick="togglePw('newAdminPassword', 'newAdminPasswordToggle')">
+      <input type="password" id="newPwInput" placeholder="Nhập mật khẩu mới">
+      <button type="button" class="pw-toggle" id="newPwToggle" onclick="togglePw('newPwInput','newPwToggle')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
     <div class="row" style="margin-top:16px;">
-      <button class="btn-secondary" onclick="closeChangePasswordModal()">Hủy</button>
-      <button class="btn-primary" onclick="saveNewAdminPassword()">Lưu</button>
+      <button class="btn-secondary" onclick="closeChangePwModal()">Hủy</button>
+      <button class="btn-primary" onclick="saveNewPassword()">Lưu</button>
     </div>
-  </div>
-</div>
-
-<!-- MODAL: credentials display after adding a student -->
-<div id="credModal" class="modal-bg hidden">
-  <div class="modal-box">
-    <h2>Đã tạo tài khoản</h2>
-    <p class="muted">Copy gửi cho phụ huynh:</p>
-    <div class="credbox" id="credBoxContent"></div>
-    <button class="btn-primary" style="width:100%;margin-top:16px;" onclick="closeCredModal()">Đóng</button>
   </div>
 </div>
 
 <div id="toastBox"></div>
 
 <script>
-// =====================================================
-// SETUP / SUPABASE CONNECTION
-// =====================================================
 var supabaseClient = null;
-var currentClasses = [];
-var currentStudents = [];
-var pendingBulkStudents = [];
+var currentStudent = null; // { id, name, class_id }
+var currentAssignments = [];
+var selectedFile = null;
+var selectedRefImage = null;
+var autoRefreshTimer = null;
+var mediaRecorder = null;
+var recordedChunks = [];
+var recordTimerInterval = null;
+var recordSeconds = 0;
+var mediaStream = null;
+
+var eyeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+var eyeOffIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 4.22-5.19M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function togglePw(inputId, btnId) {
+  var el = document.getElementById(inputId);
+  var btn = document.getElementById(btnId);
+  if (el.type === 'password') { el.type = 'text'; btn.innerHTML = eyeOffIcon; }
+  else { el.type = 'password'; btn.innerHTML = eyeIcon; }
+}
+
+// =====================================================
+// SETUP / CONNECT (gắn cứng sẵn - học sinh/phụ huynh không cần cấu hình gì)
+// =====================================================
+var SUPABASE_URL_FIXED = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
+var SUPABASE_ANON_KEY_FIXED = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
 
 function initApp() {
-  var url = localStorage.getItem('sp_supabase_url');
-  var key = localStorage.getItem('sp_supabase_key');
-  if (!url || !key) {
-    document.getElementById('setupScreen').classList.remove('hidden');
-    return;
-  }
-  connectSupabase(url, key);
-  if (sessionStorage.getItem('sp_admin_logged_in') === 'yes') {
+  connectSupabase(SUPABASE_URL_FIXED, SUPABASE_ANON_KEY_FIXED);
+
+  var savedStudentId = localStorage.getItem('sp_student_id');
+  var savedStudentName = localStorage.getItem('sp_student_name');
+  var savedClassId = localStorage.getItem('sp_student_class_id');
+  var savedAudienceLevel = localStorage.getItem('sp_student_audience_level') || 'elementary';
+  if (savedStudentId) {
+    currentStudent = { id: savedStudentId, name: savedStudentName, class_id: savedClassId, audience_level: savedAudienceLevel };
     showMainApp();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -393,46 +313,45 @@ function connectSupabase(url, key) {
   supabaseClient = supabase.createClient(url, key);
 }
 
-function saveSetup() {
-  var url = document.getElementById('setupUrl').value.trim();
-  var key = document.getElementById('setupKey').value.trim();
-  if (!url || !key) {
-    showToast('Vui lòng nhập đủ URL và Key');
-    return;
-  }
-  localStorage.setItem('sp_supabase_url', url);
-  localStorage.setItem('sp_supabase_key', key);
-  connectSupabase(url, key);
-  document.getElementById('setupScreen').classList.add('hidden');
-  document.getElementById('loginScreen').classList.remove('hidden');
-}
-
 // =====================================================
 // AUTH
 // =====================================================
 function doLogin() {
-  var pw = document.getElementById('loginPassword').value;
-  supabaseClient.from('app_settings').select('value').eq('key', 'sp_admin_password').maybeSingle()
+  var username = document.getElementById('loginUsername').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  if (!username || !password) { showToast('Nhập đủ tài khoản và mật khẩu'); return; }
+
+  supabaseClient.from('sp_students').select('*').eq('username', username).maybeSingle()
     .then(function(res) {
-      if (res.error) {
-        showToast('Lỗi kết nối: ' + res.error.message);
-        return;
-      }
-      if (!res.data) {
-        showToast('Chưa có mật khẩu Admin trong bảng app_settings. Kiểm tra lại bảng trong Supabase (Table Editor).');
-        return;
-      }
-      if (res.data.value === pw) {
-        sessionStorage.setItem('sp_admin_logged_in', 'yes');
-        showMainApp();
+      if (res.error) { showToast('Lỗi kết nối: ' + res.error.message); return; }
+      if (!res.data) { showToast('Không tìm thấy tài khoản'); return; }
+      if (res.data.password !== password) { showToast('Sai mật khẩu'); return; }
+
+      currentStudent = { id: res.data.id, name: res.data.name, class_id: res.data.class_id, audience_level: 'elementary' };
+      localStorage.setItem('sp_student_id', currentStudent.id);
+      localStorage.setItem('sp_student_name', currentStudent.name);
+      localStorage.setItem('sp_student_class_id', currentStudent.class_id || '');
+
+      if (currentStudent.class_id) {
+        supabaseClient.from('sp_classes').select('audience_level').eq('id', currentStudent.class_id).maybeSingle()
+          .then(function(cRes) {
+            currentStudent.audience_level = (cRes.data && cRes.data.audience_level) || 'elementary';
+            localStorage.setItem('sp_student_audience_level', currentStudent.audience_level);
+            showMainApp();
+          });
       } else {
-        showToast('Sai mật khẩu');
+        localStorage.setItem('sp_student_audience_level', 'elementary');
+        showMainApp();
       }
     });
 }
 
 function doLogout() {
-  sessionStorage.removeItem('sp_admin_logged_in');
+  localStorage.removeItem('sp_student_id');
+  localStorage.removeItem('sp_student_name');
+  localStorage.removeItem('sp_student_class_id');
+  localStorage.removeItem('sp_student_audience_level');
+  currentStudent = null;
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
 }
@@ -440,694 +359,241 @@ function doLogout() {
 function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  loadClasses();
+  document.getElementById('welcomeName').textContent = '🎤 Chào ' + currentStudent.name;
+  loadSubmissions(); // tải trước để biết bài giao nào đã nộp rồi
+  loadAssignments();
 }
 
-function openChangePasswordModal() {
-  document.getElementById('changePasswordModal').classList.remove('hidden');
+function openChangePwModal() { document.getElementById('changePwModal').classList.remove('hidden'); }
+function closeChangePwModal() {
+  document.getElementById('changePwModal').classList.add('hidden');
+  document.getElementById('newPwInput').value = '';
 }
-function closeChangePasswordModal() {
-  document.getElementById('changePasswordModal').classList.add('hidden');
-  document.getElementById('newAdminPassword').value = '';
-}
-function saveNewAdminPassword() {
-  var newPw = document.getElementById('newAdminPassword').value.trim();
+function saveNewPassword() {
+  var newPw = document.getElementById('newPwInput').value.trim();
   if (!newPw) { showToast('Nhập mật khẩu mới'); return; }
-  supabaseClient.from('app_settings').update({ value: newPw }).eq('key', 'sp_admin_password')
+  supabaseClient.from('sp_students').update({ password: newPw }).eq('id', currentStudent.id)
     .then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       showToast('Đã đổi mật khẩu');
-      closeChangePasswordModal();
+      closeChangePwModal();
     });
-}
-
-// =====================================================
-// TABS
-// =====================================================
-function switchTab(tab) {
-  var classesTab = document.getElementById('tabClasses');
-  var studentsTab = document.getElementById('tabStudents');
-  var assignmentsTab = document.getElementById('tabAssignments');
-  var btnClasses = document.getElementById('tabBtnClasses');
-  var btnStudents = document.getElementById('tabBtnStudents');
-  var btnAssignments = document.getElementById('tabBtnAssignments');
-
-  classesTab.classList.add('hidden');
-  studentsTab.classList.add('hidden');
-  assignmentsTab.classList.add('hidden');
-  btnClasses.classList.remove('active');
-  btnStudents.classList.remove('active');
-  btnAssignments.classList.remove('active');
-
-  if (tab === 'classes') {
-    classesTab.classList.remove('hidden');
-    btnClasses.classList.add('active');
-  } else if (tab === 'students') {
-    studentsTab.classList.remove('hidden');
-    btnStudents.classList.add('active');
-    loadClasses();
-  } else if (tab === 'assignments') {
-    assignmentsTab.classList.remove('hidden');
-    btnAssignments.classList.add('active');
-    loadClassesForAssignments();
-  }
-}
-
-// =====================================================
-// CLASSES
-// =====================================================
-function loadClasses() {
-  supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
-      currentClasses = res.data || [];
-      renderClasses();
-      renderClassDropdown();
-    });
-}
-
-function audienceLevelLabel(level) {
-  if (level === 'middle') return 'Cấp 2';
-  if (level === 'high') return 'Cấp 3';
-  if (level === 'ielts') return 'IELTS';
-  return 'Tiểu học';
-}
-
-function renderClasses() {
-  var tbody = document.getElementById('classesTableBody');
-  var html = '';
-  for (var i = 0; i < currentClasses.length; i++) {
-    var c = currentClasses[i];
-    html += '<tr>';
-    html += '<td>' + escapeHtml(c.name) + '</td>';
-    html += '<td>' + escapeHtml(c.curriculum || '-') + '</td>';
-    html += '<td>';
-    html += '<select onchange="updateClassAudience(\'' + c.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
-    html += '<option value="elementary"' + (c.audience_level === 'elementary' || !c.audience_level ? ' selected' : '') + '>Tiểu học</option>';
-    html += '<option value="middle"' + (c.audience_level === 'middle' ? ' selected' : '') + '>Cấp 2</option>';
-    html += '<option value="high"' + (c.audience_level === 'high' ? ' selected' : '') + '>Cấp 3</option>';
-    html += '<option value="ielts"' + (c.audience_level === 'ielts' ? ' selected' : '') + '>IELTS</option>';
-    html += '</select>';
-    html += '</td>';
-    html += '<td id="classCount_' + c.id + '">...</td>';
-    html += '<td><button class="btn-danger btn-sm" onclick="deleteClass(\'' + c.id + '\')">Xóa</button></td>';
-    html += '</tr>';
-  }
-  tbody.innerHTML = html;
-  for (var j = 0; j < currentClasses.length; j++) {
-    countStudentsInClass(currentClasses[j].id);
-  }
-}
-
-function updateClassAudience(classId, newLevel) {
-  supabaseClient.from('sp_classes').update({ audience_level: newLevel }).eq('id', classId)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã cập nhật đối tượng lớp thành ' + audienceLevelLabel(newLevel));
-      loadClasses();
-    });
-}
-
-function countStudentsInClass(classId) {
-  supabaseClient.from('sp_students').select('id', { count: 'exact', head: true }).eq('class_id', classId)
-    .then(function(res) {
-      var el = document.getElementById('classCount_' + classId);
-      if (el) el.textContent = res.count !== null ? res.count : '0';
-    });
-}
-
-function renderClassDropdown() {
-  var sel = document.getElementById('classSelect');
-  var html = '';
-  for (var i = 0; i < currentClasses.length; i++) {
-    html += '<option value="' + currentClasses[i].id + '">' + escapeHtml(currentClasses[i].name) + ' — ' + audienceLevelLabel(currentClasses[i].audience_level) + '</option>';
-  }
-  sel.innerHTML = html;
-  if (currentClasses.length > 0) loadStudents();
-}
-
-function addClass() {
-  var name = document.getElementById('newClassName').value.trim();
-  var curriculum = document.getElementById('newClassCurriculum').value.trim();
-  var audienceLevel = document.getElementById('newClassAudience').value;
-  if (!name) { showToast('Nhập tên lớp'); return; }
-  supabaseClient.from('sp_classes').insert({ name: name, curriculum: curriculum, audience_level: audienceLevel })
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      document.getElementById('newClassName').value = '';
-      document.getElementById('newClassCurriculum').value = '';
-      showToast('Đã thêm lớp');
-      loadClasses();
-    });
-}
-
-function deleteClass(id) {
-  if (!confirm('Xóa lớp này? Học sinh trong lớp sẽ không còn thuộc lớp nào.')) return;
-  supabaseClient.from('sp_classes').delete().eq('id', id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã xóa lớp');
-      loadClasses();
-    });
-}
-
-// =====================================================
-// STUDENTS
-// =====================================================
-function isoToDisplayDate(iso) {
-  if (!iso) return '';
-  var parts = iso.split('-');
-  if (parts.length !== 3) return '';
-  return parts[2] + '/' + parts[1] + '/' + parts[0];
-}
-
-function loadStudents() {
-  var classId = document.getElementById('classSelect').value;
-  if (!classId) { currentStudents = []; renderStudentsTable(); return; }
-  supabaseClient.from('sp_students').select('*').eq('class_id', classId).order('name', { ascending: true })
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi tải học sinh: ' + res.error.message); return; }
-      var rows = res.data || [];
-      currentStudents = [];
-      for (var i = 0; i < rows.length; i++) {
-        currentStudents.push({
-          id: rows[i].id,
-          name: rows[i].name,
-          dobDisplay: isoToDisplayDate(rows[i].dob),
-          parent_name: rows[i].parent_name || '',
-          parent_phone: rows[i].parent_phone || '',
-          username: rows[i].username
-        });
-      }
-      renderStudentsTable();
-    });
-}
-
-var autoSaveTimers = {};
-
-function updateStudentField(index, field, value) {
-  if (!currentStudents[index]) return;
-  currentStudents[index][field] = value;
-  if (autoSaveTimers[index]) clearTimeout(autoSaveTimers[index]);
-  autoSaveTimers[index] = setTimeout(function() {
-    autoSaveStudentRow(index);
-  }, 900);
-}
-
-function autoSaveStudentRow(index) {
-  var classId = document.getElementById('classSelect').value;
-  var s = currentStudents[index];
-  if (!s || !classId) return;
-  if (!s.name || !s.name.trim()) return; // chưa có tên thì chưa lưu
-
-  var dobIso = convertDateToIso(s.dobDisplay);
-
-  if (s.id) {
-    var usernameToSave = (s.username || '').trim();
-    if (!usernameToSave) return; // không cho lưu tên tài khoản rỗng
-
-    supabaseClient.from('sp_students').update({
-      name: s.name.trim(),
-      dob: dobIso,
-      parent_name: s.parent_name || null,
-      parent_phone: s.parent_phone || null,
-      username: usernameToSave
-    }).eq('id', s.id).then(function(res) {
-      if (res.error) {
-        if (res.error.code === '23505') {
-          showToast('Tên tài khoản này đã có người dùng, chọn tên khác nhé');
-        } else {
-          showToast('Lỗi lưu: ' + res.error.message);
-        }
-      }
-    });
-  } else {
-    if (s._saving) return; // tránh tạo trùng nếu đang lưu dở
-    s._saving = true;
-    generateUniqueUsername(s.name, function(username) {
-      var record = {
-        class_id: classId,
-        name: s.name.trim(),
-        username: username,
-        password: '123456',
-        dob: dobIso,
-        parent_name: s.parent_name || null,
-        parent_phone: s.parent_phone || null
-      };
-      supabaseClient.from('sp_students').insert(record).select().single().then(function(res) {
-        s._saving = false;
-        if (res.error) { showToast('Lỗi lưu: ' + res.error.message); return; }
-        s.id = res.data.id;
-        s.username = res.data.username;
-        var userCell = document.getElementById('studentUsernameCell_' + index);
-        var actionsCell = document.getElementById('studentActionsCell_' + index);
-        if (userCell) userCell.innerHTML = '<span class="pill">' + escapeHtml(s.username) + '</span>';
-        if (actionsCell) {
-          actionsCell.innerHTML = '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> <button class="btn-danger btn-sm" onclick="deleteStudentRow(' + index + ')">Xóa</button>';
-        }
-        showToast('Đã tạo tài khoản ' + s.name.trim() + ': ' + username + ' / 123456');
-      });
-    });
-  }
-}
-
-function addEmptyStudentRow() {
-  currentStudents.push({ id: null, name: '', dobDisplay: '', parent_name: '', parent_phone: '', username: '' });
-  renderStudentsTable();
-}
-
-function renderStudentsTable() {
-  var searchVal = document.getElementById('studentSearch').value.toLowerCase();
-  var tbody = document.getElementById('studentsTableBody');
-  var html = '';
-  var shown = 0;
-  for (var i = 0; i < currentStudents.length; i++) {
-    var s = currentStudents[i];
-    if (searchVal && s.name.toLowerCase().indexOf(searchVal) === -1) continue;
-    shown++;
-    html += '<tr id="studentRow_' + i + '">';
-    html += '<td class="muted">' + shown + '</td>';
-    html += '<td><input type="text" value="' + escapeHtml(s.name) + '" placeholder="Tên học sinh *" oninput="updateStudentField(' + i + ',\'name\',this.value)"></td>';
-    html += '<td><input type="text" value="' + escapeHtml(s.dobDisplay) + '" placeholder="dd/mm/yyyy" oninput="updateStudentField(' + i + ',\'dobDisplay\',this.value)"></td>';
-    html += '<td><input type="text" value="' + escapeHtml(s.parent_phone) + '" placeholder="0912xxxxxx" oninput="updateStudentField(' + i + ',\'parent_phone\',this.value)"></td>';
-    html += '<td><input type="text" value="' + escapeHtml(s.parent_name) + '" placeholder="Tên PH" oninput="updateStudentField(' + i + ',\'parent_name\',this.value)"></td>';
-    html += '<td id="studentUsernameCell_' + i + '">' + (s.id ? '<input type="text" value="' + escapeHtml(s.username) + '" oninput="updateStudentField(' + i + ',\'username\',this.value)" style="width:130px;">' : '<span class="muted">Chưa lưu</span>') + '</td>';
-    html += '<td>';
-    if (s.id) {
-      html += '<select onchange="transferStudentClass(\'' + s.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
-      for (var k = 0; k < currentClasses.length; k++) {
-        var cls = currentClasses[k];
-        var isCurrent = document.getElementById('classSelect').value === cls.id;
-        html += '<option value="' + cls.id + '"' + (isCurrent ? ' selected' : '') + '>' + escapeHtml(cls.name) + '</option>';
-      }
-      html += '</select>';
-    } else {
-      html += '<span class="muted">—</span>';
-    }
-    html += '</td>';
-    html += '<td id="studentActionsCell_' + i + '">';
-    if (s.id) html += '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> ';
-    html += '<button class="btn-danger btn-sm" onclick="deleteStudentRow(' + i + ')">Xóa</button>';
-    html += '</td>';
-    html += '</tr>';
-  }
-  if (html === '') html = '<tr><td colspan="7" class="muted">Chưa có học sinh nào, bấm "+ Thêm hàng" để bắt đầu</td></tr>';
-  tbody.innerHTML = html;
-}
-
-function slugifyName(name) {
-  var s = name.toLowerCase();
-  s = s.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
-  s = s.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e');
-  s = s.replace(/ì|í|ị|ỉ|ĩ/g, 'i');
-  s = s.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o');
-  s = s.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u');
-  s = s.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y');
-  s = s.replace(/đ/g, 'd');
-  s = s.replace(/[^a-z0-9\s]/g, '');
-  s = s.trim().replace(/\s+/g, '');
-  return s;
-}
-
-function generateUniqueUsername(baseName, callback) {
-  var base = slugifyName(baseName);
-  if (!base) base = 'hocsinh';
-  supabaseClient.from('sp_students').select('username').ilike('username', base + '%')
-    .then(function(res) {
-      var existing = {};
-      if (res.data) {
-        for (var i = 0; i < res.data.length; i++) existing[res.data[i].username] = true;
-      }
-      var candidate = base;
-      var n = 2;
-      while (existing[candidate]) {
-        candidate = base + n;
-        n++;
-      }
-      callback(candidate);
-    });
-}
-
-function saveAllStudents() {
-  var classId = document.getElementById('classSelect').value;
-  if (!classId) { showToast('Chưa chọn lớp'); return; }
-  var newlyCreated = [];
-  saveStudentAtIndex(0, classId, newlyCreated);
-}
-
-function saveStudentAtIndex(index, classId, newlyCreated) {
-  if (index >= currentStudents.length) {
-    showToast('Đã lưu xong');
-    if (newlyCreated.length > 0) showCredModalList(newlyCreated);
-    loadStudents();
-    return;
-  }
-  var s = currentStudents[index];
-  if (!s.name || !s.name.trim()) {
-    saveStudentAtIndex(index + 1, classId, newlyCreated);
-    return;
-  }
-  var dobIso = convertDateToIso(s.dobDisplay);
-  if (s.id) {
-    // update existing
-    var usernameToSave = (s.username || '').trim();
-    supabaseClient.from('sp_students').update({
-      name: s.name.trim(),
-      dob: dobIso,
-      parent_name: s.parent_name || null,
-      parent_phone: s.parent_phone || null,
-      username: usernameToSave || s.username
-    }).eq('id', s.id).then(function(res) {
-      if (res.error) {
-        if (res.error.code === '23505') showToast('Tên tài khoản trùng cho học sinh "' + s.name + '", chưa lưu được tên tài khoản này');
-        else showToast('Lỗi lưu "' + s.name + '": ' + res.error.message);
-      }
-      saveStudentAtIndex(index + 1, classId, newlyCreated);
-    });
-  } else {
-    // insert new
-    generateUniqueUsername(s.name, function(username) {
-      var record = {
-        class_id: classId,
-        name: s.name.trim(),
-        username: username,
-        password: '123456',
-        dob: dobIso,
-        parent_name: s.parent_name || null,
-        parent_phone: s.parent_phone || null
-      };
-      supabaseClient.from('sp_students').insert(record).then(function(res) {
-        if (!res.error) newlyCreated.push({ name: s.name.trim(), username: username, password: '123456' });
-        saveStudentAtIndex(index + 1, classId, newlyCreated);
-      });
-    });
-  }
-}
-
-function deleteStudentRow(index) {
-  var s = currentStudents[index];
-  if (!s.id) {
-    // unsaved row, just remove locally
-    currentStudents.splice(index, 1);
-    renderStudentsTable();
-    return;
-  }
-  if (!confirm('Xóa học sinh này? Toàn bộ bài nộp/điểm liên quan cũng sẽ bị xóa.')) return;
-  supabaseClient.from('sp_students').delete().eq('id', s.id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã xóa học sinh');
-      loadStudents();
-    });
-}
-
-function transferStudentClass(studentId, newClassId) {
-  if (!confirm('Chuyển học sinh này sang lớp khác? Toàn bộ lịch sử bài nộp/điểm sẽ được giữ nguyên.')) {
-    renderStudentsTable(); // hủy thao tác, vẽ lại dropdown về đúng lớp cũ
-    return;
-  }
-  supabaseClient.from('sp_students').update({ class_id: newClassId }).eq('id', studentId)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi chuyển lớp: ' + res.error.message); return; }
-      showToast('Đã chuyển lớp thành công');
-      loadStudents(); // học sinh biến mất khỏi danh sách lớp cũ, load lại đúng lớp đang chọn
-    });
-}
-
-function resetStudentPassword(id) {
-  if (!confirm('Đặt lại mật khẩu về 123456?')) return;
-  supabaseClient.from('sp_students').update({ password: '123456' }).eq('id', id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã reset mật khẩu về 123456');
-    });
-}
-
-function showCredModalList(list) {
-  var box = document.getElementById('credBoxContent');
-  var html = '';
-  for (var i = 0; i < list.length; i++) {
-    html += '<div style="margin-bottom:10px;"><b>' + escapeHtml(list[i].name) + '</b><br>Tài khoản: <b>' + escapeHtml(list[i].username) + '</b> | Mật khẩu: <b>' + escapeHtml(list[i].password) + '</b></div>';
-  }
-  box.innerHTML = html;
-  document.getElementById('credModal').classList.remove('hidden');
-}
-function closeCredModal() {
-  document.getElementById('credModal').classList.add('hidden');
-}
-
-// =====================================================
-// BULK PASTE IMPORT
-// =====================================================
-function parsePastedList() {
-  var raw = document.getElementById('pasteArea').value;
-  var lines = raw.split('\n');
-  pendingBulkStudents = [];
-  var previewHtml = '';
-  var skippedNames = [];
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i].replace(/\r/g, '');
-    if (!line.trim()) continue;
-    var cols = line.split('\t');
-    var name = (cols[0] || '').trim();
-    var dobRaw = (cols[1] || '').trim();
-    var phone = (cols[2] || '').trim();
-    var parentName = (cols[3] || '').trim();
-    if (!name) continue;
-    if (/^ten\s*(hoc\s*sinh)?$/i.test(slugifyName(name))) continue; // skip header row
-
-    if (!dobRaw || !phone || !parentName) {
-      skippedNames.push(name);
-      continue;
-    }
-
-    var dobIso = convertDateToIso(dobRaw);
-    pendingBulkStudents.push({ name: name, dob: dobIso, phone: phone, parentName: parentName });
-
-    previewHtml += '<tr>';
-    previewHtml += '<td>' + escapeHtml(name) + '</td>';
-    previewHtml += '<td>' + escapeHtml(dobRaw) + '</td>';
-    previewHtml += '<td>' + escapeHtml(phone) + '</td>';
-    previewHtml += '<td>' + escapeHtml(parentName) + '</td>';
-    previewHtml += '</tr>';
-  }
-
-  var skippedBox = document.getElementById('pasteSkippedBox');
-  if (skippedNames.length > 0) {
-    skippedBox.textContent = '⚠️ Bỏ qua ' + skippedNames.length + ' học sinh thiếu thông tin (chưa đủ ngày sinh/SĐT/phụ huynh): ' + skippedNames.join(', ');
-    skippedBox.classList.remove('hidden');
-  } else {
-    skippedBox.classList.add('hidden');
-  }
-
-  if (pendingBulkStudents.length === 0) {
-    showToast('Không có học sinh nào đủ thông tin để tạo tài khoản');
-    document.getElementById('pastePreviewBox').classList.add('hidden');
-    return;
-  }
-  document.getElementById('pastePreviewBody').innerHTML = previewHtml;
-  document.getElementById('pastePreviewBox').classList.remove('hidden');
-}
-
-function convertDateToIso(d) {
-  if (!d) return null;
-  var m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) {
-    var dd = m[1].padStart(2, '0');
-    var mm = m[2].padStart(2, '0');
-    return m[3] + '-' + mm + '-' + dd;
-  }
-  return null;
-}
-
-function confirmBulkImport() {
-  var classId = document.getElementById('classSelect').value;
-  if (!classId) { showToast('Chưa chọn lớp'); return; }
-  importNextStudent(0, classId);
-}
-
-function importNextStudent(index, classId) {
-  if (index >= pendingBulkStudents.length) {
-    showToast('Đã tạo ' + pendingBulkStudents.length + ' tài khoản');
-    document.getElementById('pasteArea').value = '';
-    document.getElementById('pastePreviewBox').classList.add('hidden');
-    pendingBulkStudents = [];
-    loadStudents();
-    return;
-  }
-  var item = pendingBulkStudents[index];
-  generateUniqueUsername(item.name, function(username) {
-    var record = {
-      class_id: classId,
-      name: item.name,
-      username: username,
-      password: '123456',
-      dob: item.dob,
-      parent_name: item.parentName || null,
-      parent_phone: item.phone || null
-    };
-    supabaseClient.from('sp_students').insert(record).then(function(res) {
-      importNextStudent(index + 1, classId);
-    });
-  });
-}
-
-// =====================================================
-// UTIL
-// =====================================================
-var eyeIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
-var eyeOffIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 4.22-5.19M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-
-function togglePw(inputId, btnId) {
-  var el = document.getElementById(inputId);
-  var btn = document.getElementById(btnId);
-  if (el.type === 'password') {
-    el.type = 'text';
-    btn.innerHTML = eyeOffIcon;
-  } else {
-    el.type = 'password';
-    btn.innerHTML = eyeIcon;
-  }
-}
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function showToast(msg) {
-  var box = document.getElementById('toastBox');
-  var el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  box.innerHTML = '';
-  box.appendChild(el);
-  setTimeout(function() {
-    if (el.parentNode) el.parentNode.removeChild(el);
-  }, 3000);
 }
 
 // =====================================================
 // ASSIGNMENTS
 // =====================================================
-var selectedAssignmentImage = null;
-var currentAssignmentsList = [];
-var assignmentClassesList = [];
-var assignmentClassesInKhoi = [];
+var submittedAssignmentIds = {};
+var useFreeMode = false;
 
-function loadClassesForAssignments() {
-  supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
-      assignmentClassesList = res.data || [];
-      onAssignmentAudienceChange();
-    });
+function loadAssignments() {
+  if (!currentStudent.class_id) return;
+
+  var byClass = supabaseClient.from('sp_assignment_classes')
+    .select('sp_assignments(*)')
+    .eq('class_id', currentStudent.class_id);
+
+  var byStudent = supabaseClient.from('sp_assignments')
+    .select('*')
+    .eq('student_id', currentStudent.id);
+
+  Promise.all([byClass, byStudent]).then(function(results) {
+    var classRes = results[0];
+    var studentRes = results[1];
+    var merged = {};
+
+    if (!classRes.error) {
+      var classRows = classRes.data || [];
+      for (var i = 0; i < classRows.length; i++) {
+        if (classRows[i].sp_assignments) merged[classRows[i].sp_assignments.id] = classRows[i].sp_assignments;
+      }
+    }
+    if (!studentRes.error) {
+      var studentRows = studentRes.data || [];
+      for (var j = 0; j < studentRows.length; j++) {
+        merged[studentRows[j].id] = studentRows[j];
+      }
+    }
+
+    var list = Object.keys(merged).map(function(id) { return merged[id]; });
+    list.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    currentAssignments = list;
+    renderAssignmentDropdown();
+  });
 }
 
-function onAssignmentAudienceChange() {
-  var audience = document.getElementById('assignmentAudienceSelect').value;
-  var isIelts = audience === 'ielts';
-  var generalGroup = document.getElementById('optgroupGeneral');
-  var ieltsGroup = document.getElementById('optgroupIelts');
-  var typeSelect = document.getElementById('newAssignmentType');
-  var note = document.getElementById('assignmentClassAudienceNote');
+function renderAssignmentDropdown() {
+  var sel = document.getElementById('assignmentSelect');
+  var currentValue = sel.value;
+
+  var undone = [];
+  var done = [];
+  for (var i = 0; i < currentAssignments.length; i++) {
+    var a = currentAssignments[i];
+    if (submittedAssignmentIds[a.id]) done.push(a);
+    else undone.push(a);
+  }
+  var sortedAssignments = undone.concat(done);
+
+  var html = '';
+  for (var j = 0; j < sortedAssignments.length; j++) {
+    var b = sortedAssignments[j];
+    var doneMark = submittedAssignmentIds[b.id] ? ' ✅ Đã nộp' : '';
+    html += '<option value="' + b.id + '">' + escapeHtml(b.topic) + doneMark + '</option>';
+  }
+  sel.innerHTML = html;
+  // giữ lại lựa chọn cũ nếu còn hợp lệ, không thì mặc định bài CHƯA làm đầu tiên
+  if (currentValue && html.indexOf('value="' + currentValue + '"') !== -1) {
+    sel.value = currentValue;
+  } else if (sortedAssignments.length > 0) {
+    sel.value = sortedAssignments[0].id;
+  }
+  applyModeVisibility();
+}
+
+function toggleFreeMode(toFree) {
+  useFreeMode = toFree;
+  applyModeVisibility();
+}
+
+function applyModeVisibility() {
+  var assignmentBlock = document.getElementById('assignmentBlock');
+  var freePracticeBlock = document.getElementById('freePracticeBlock');
+  var backLink = document.getElementById('backToAssignmentLink');
+  var hasAssignments = currentAssignments.length > 0;
+
+  if (hasAssignments && !useFreeMode) {
+    assignmentBlock.classList.remove('hidden');
+    freePracticeBlock.classList.add('hidden');
+    renderAssignmentPreview();
+  } else {
+    assignmentBlock.classList.add('hidden');
+    freePracticeBlock.classList.remove('hidden');
+    backLink.classList.toggle('hidden', !hasAssignments);
+    clearAssignmentPreview();
+    applyAudienceToFreePractice();
+    onFreePracticeTypeChange();
+  }
+}
+
+function onAssignmentChange() {
+  renderAssignmentPreview();
+}
+
+function clearAssignmentPreview() {
+  document.getElementById('assignmentDescriptionPreview').classList.add('hidden');
+  document.getElementById('assignmentImagePreview').classList.add('hidden');
+  document.getElementById('readingTextPreview').classList.add('hidden');
+}
+
+function renderAssignmentPreview() {
+  var assignmentId = document.getElementById('assignmentSelect').value;
+  var descBlock = document.getElementById('assignmentDescriptionPreview');
+  var previewBlock = document.getElementById('assignmentImagePreview');
+  var readingBlock = document.getElementById('readingTextPreview');
+
+  var chosen = null;
+  for (var i = 0; i < currentAssignments.length; i++) {
+    if (currentAssignments[i].id === assignmentId) { chosen = currentAssignments[i]; break; }
+  }
+
+  if (chosen && chosen.description) {
+    document.getElementById('assignmentDescriptionPreviewContent').textContent = chosen.description;
+    descBlock.classList.remove('hidden');
+  } else {
+    descBlock.classList.add('hidden');
+  }
+
+  if (chosen && chosen.reference_image_url) {
+    document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
+    previewBlock.classList.remove('hidden');
+  } else {
+    previewBlock.classList.add('hidden');
+  }
+
+  if (chosen && chosen.type === 'reading' && chosen.reading_text) {
+    document.getElementById('readingTextPreviewLabel').textContent = 'Đọc đúng đoạn này:';
+    document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
+    readingBlock.classList.remove('hidden');
+  } else if (chosen && (chosen.type === 'ielts_part1' || chosen.type === 'ielts_part3') && chosen.questions_text) {
+    document.getElementById('readingTextPreviewLabel').textContent = 'Trả lời lần lượt các câu hỏi sau (ghi âm liên tục):';
+    document.getElementById('readingTextPreviewContent').textContent = chosen.questions_text;
+    readingBlock.classList.remove('hidden');
+  } else {
+    readingBlock.classList.add('hidden');
+  }
+}
+
+function applyAudienceToFreePractice() {
+  var isIelts = currentStudent.audience_level === 'ielts';
+  var generalGroup = document.getElementById('freeOptgroupGeneral');
+  var ieltsGroup = document.getElementById('freeOptgroupIelts');
+  var sel = document.getElementById('freePracticeType');
+  var label = document.getElementById('freePracticeLabel');
 
   generalGroup.style.display = isIelts ? 'none' : '';
   ieltsGroup.style.display = isIelts ? '' : 'none';
-  typeSelect.value = isIelts ? 'ielts_part2' : 'presentation';
-
-  note.textContent = isIelts
-    ? 'Khối IELTS → chỉ hiện các loại bài IELTS Part 1/2/3.'
-    : 'Khối ' + audienceLevelLabel(audience) + ' → chỉ hiện 3 loại bài thường (Thuyết trình/Từ vựng/Luyện đọc).';
-
-  onAssignmentTypeChange();
-
-  assignmentClassesInKhoi = [];
-  for (var i = 0; i < assignmentClassesList.length; i++) {
-    var lvl = assignmentClassesList[i].audience_level || 'elementary';
-    if (lvl === audience) assignmentClassesInKhoi.push(assignmentClassesList[i]);
-  }
-  renderAssignmentClassCheckboxes();
-  loadAssignmentsForAudience(audience);
+  sel.value = isIelts ? 'ielts_part2' : 'presentation';
+  label.textContent = 'Học sinh tự luyện';
 }
 
-function renderAssignmentClassCheckboxes() {
-  var box = document.getElementById('assignmentClassCheckboxes');
-  if (assignmentClassesInKhoi.length === 0) {
-    box.innerHTML = '<p class="muted">Khối này chưa có lớp nào</p>';
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < assignmentClassesInKhoi.length; i++) {
-    var c = assignmentClassesInKhoi[i];
-    html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:normal;cursor:pointer;">';
-    html += '<input type="checkbox" value="' + c.id + '" class="assignment-class-checkbox" style="width:auto;">';
-    html += '<span>' + escapeHtml(c.name) + '</span>';
-    html += '</label>';
-  }
-  box.innerHTML = html;
-}
+function onFreePracticeTypeChange() {
+  var type = document.getElementById('freePracticeType').value;
+  var imageBlock = document.getElementById('freeImageBlock');
+  var readingTextBlock = document.getElementById('freeReadingTextBlock');
+  var readingLabel = document.getElementById('freeReadingTextLabel');
+  var readingInput = document.getElementById('freeReadingTextInput');
 
-function onAssignmentTypeChange() {
-  var type = document.getElementById('newAssignmentType').value;
-  var readingBlock = document.getElementById('readingTextBlock');
-  var questionsBlock = document.getElementById('questionsTextBlock');
-  var topicHint = document.getElementById('topicHintText');
-  var descHint = document.getElementById('descriptionHintText');
+  var needsTextInput = (type === 'reading' || type === 'ielts_part1' || type === 'ielts_part3');
 
-  readingBlock.classList.toggle('hidden', type !== 'reading');
-  questionsBlock.classList.toggle('hidden', type !== 'ielts_part1' && type !== 'ielts_part3');
-
-  if (type === 'ielts_part2') {
-    topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
-    descHint.textContent = '(gợi ý/bullet points như thẻ Cue Card thật, VD: You should say: where you went / who you went with / what you did...)';
-  } else if (type === 'ielts_part1' || type === 'ielts_part3') {
-    topicHint.textContent = '(VD: Hobbies and Free Time)';
-    descHint.textContent = '(tùy chọn, ghi chú thêm bối cảnh nếu cần)';
+  if (needsTextInput) {
+    imageBlock.classList.add('hidden');
+    readingTextBlock.classList.remove('hidden');
+    if (type === 'reading') {
+      readingLabel.textContent = 'Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)';
+      readingInput.placeholder = 'Dán đoạn văn con đang đọc...';
+    } else {
+      readingLabel.textContent = 'Câu hỏi đang trả lời (tùy chọn — có thì chấm chính xác hơn)';
+      readingInput.placeholder = 'VD: What do you usually do in your free time?';
+    }
   } else {
-    topicHint.textContent = '(VD: So sánh 2 bức tranh Unit 2 - Playtime)';
-    descHint.textContent = '(tùy chọn)';
+    imageBlock.classList.remove('hidden');
+    readingTextBlock.classList.add('hidden');
   }
 }
 
-function onAssignmentImageSelected() {
-  var input = document.getElementById('assignmentImageInput');
+function onRefImageSelected() {
+  var input = document.getElementById('refImageInput');
   if (input.files && input.files.length > 0) {
-    setAssignmentImageFile(input.files[0]);
+    setRefImageFile(input.files[0]);
   } else {
-    setAssignmentImageFile(null);
+    setRefImageFile(null);
   }
 }
 
-function setAssignmentImageFile(file) {
-  var label = document.getElementById('assignmentImageLabel');
+function setRefImageFile(file) {
+  var label = document.getElementById('refImageLabel');
   if (file) {
-    selectedAssignmentImage = file;
+    selectedRefImage = file;
     label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
   } else {
-    selectedAssignmentImage = null;
+    selectedRefImage = null;
     label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
     label.classList.remove('has-file');
   }
 }
 
-// Dán ảnh bằng Ctrl+V (khi đang ở trong khu vực tạo bài giao)
+// Dán ảnh bằng Ctrl+V
 document.addEventListener('paste', function(e) {
-  var assignmentCard = document.getElementById('assignmentImageLabel');
-  if (!assignmentCard) return;
-  var assignmentsTabVisible = !document.getElementById('tabAssignments').classList.contains('hidden');
-  if (!assignmentsTabVisible) return;
+  var freeImageBlock = document.getElementById('freeImageBlock');
+  if (!freeImageBlock || freeImageBlock.offsetParent === null) return; // ẩn (kể cả do khối cha bị ẩn)
   if (!e.clipboardData || !e.clipboardData.items) return;
   for (var i = 0; i < e.clipboardData.items.length; i++) {
     var item = e.clipboardData.items[i];
     if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
       var file = item.getAsFile();
-      setAssignmentImageFile(file);
+      setRefImageFile(file);
       showToast('Đã dán ảnh');
       break;
     }
@@ -1135,11 +601,9 @@ document.addEventListener('paste', function(e) {
 });
 
 // Kéo thả ảnh vào ô chọn ảnh
-(function setupAssignmentDragDrop() {
-  document.addEventListener('DOMContentLoaded', function() {});
-  var label = null;
+(function setupRefImageDragDrop() {
   function bind() {
-    label = document.getElementById('assignmentImageLabel');
+    var label = document.getElementById('refImageLabel');
     if (!label) return;
     label.addEventListener('dragover', function(e) {
       e.preventDefault();
@@ -1152,7 +616,7 @@ document.addEventListener('paste', function(e) {
       e.preventDefault();
       label.style.borderColor = '';
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        setAssignmentImageFile(e.dataTransfer.files[0]);
+        setRefImageFile(e.dataTransfer.files[0]);
       }
     });
   }
@@ -1163,153 +627,365 @@ document.addEventListener('paste', function(e) {
   }
 })();
 
-function addAssignment() {
-  var topic = document.getElementById('newAssignmentTopic').value.trim();
-  var description = document.getElementById('newAssignmentDescription').value.trim();
-  var dueDate = document.getElementById('newAssignmentDueDate').value;
-  var type = document.getElementById('newAssignmentType').value;
-  var readingText = document.getElementById('newAssignmentReadingText').value.trim();
-  var questionsText = document.getElementById('newAssignmentQuestionsText').value.trim();
+// =====================================================
+// GHI ÂM TRỰC TIẾP
+// =====================================================
+function pickRecorderMimeType() {
+  var candidates = ['audio/mp4', 'audio/webm', 'audio/ogg'];
+  for (var i = 0; i < candidates.length; i++) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) {
+      return candidates[i];
+    }
+  }
+  return '';
+}
 
-  var checkboxes = document.querySelectorAll('.assignment-class-checkbox:checked');
-  var selectedClassIds = [];
-  for (var c = 0; c < checkboxes.length; c++) selectedClassIds.push(checkboxes[c].value);
-
-  if (selectedClassIds.length === 0) { showToast('Chưa tick lớp nào để giao bài'); return; }
-  if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
-  if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
-  if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
-
-  function insertAssignment(imageUrl) {
-    supabaseClient.from('sp_assignments').insert({
-      topic: topic,
-      description: description || null,
-      due_date: dueDate || null,
-      reference_image_url: imageUrl || null,
-      type: type,
-      reading_text: type === 'reading' ? readingText : null,
-      questions_text: (type === 'ielts_part1' || type === 'ielts_part3') ? questionsText : null
-    }).select().single().then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      var assignmentId = res.data.id;
-      var links = [];
-      for (var i = 0; i < selectedClassIds.length; i++) {
-        links.push({ assignment_id: assignmentId, class_id: selectedClassIds[i] });
-      }
-      supabaseClient.from('sp_assignment_classes').insert(links).then(function(linkRes) {
-        if (linkRes.error) { showToast('Lỗi gán lớp: ' + linkRes.error.message); return; }
-        showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp');
-        document.getElementById('newAssignmentTopic').value = '';
-        document.getElementById('newAssignmentDescription').value = '';
-        document.getElementById('newAssignmentDueDate').value = '';
-        document.getElementById('newAssignmentReadingText').value = '';
-        document.getElementById('newAssignmentQuestionsText').value = '';
-        setAssignmentImageFile(null);
-        document.getElementById('assignmentImageInput').value = '';
-        var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
-        for (var k = 0; k < checkedBoxes.length; k++) checkedBoxes[k].checked = false;
-        var audience = document.getElementById('assignmentAudienceSelect').value;
-        loadAssignmentsForAudience(audience);
-      });
-    });
+function toggleRecording() {
+  var btn = document.getElementById('recordBtn');
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
   }
 
-  if (selectedAssignmentImage) {
-    var ext = (selectedAssignmentImage.name && selectedAssignmentImage.name.split('.').pop()) || 'png';
-    var path = 'assignments/' + Date.now() + '.' + ext;
-    supabaseClient.storage.from('assignment-images').upload(path, selectedAssignmentImage)
-      .then(function(uploadRes) {
-        if (uploadRes.error) { showToast('Lỗi upload ảnh: ' + uploadRes.error.message); return; }
-        var urlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(path);
-        insertAssignment(urlRes.data.publicUrl);
-      });
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Trình duyệt này không hỗ trợ ghi âm, hãy dùng cách chọn file bên dưới');
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    mediaStream = stream;
+    recordedChunks = [];
+    var mimeType = pickRecorderMimeType();
+    var options = mimeType ? { mimeType: mimeType } : undefined;
+    try {
+      mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
+    } catch (e) {
+      mediaRecorder = new MediaRecorder(stream);
+    }
+
+    mediaRecorder.ondataavailable = function(e) {
+      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = function() {
+      var blobType = mediaRecorder.mimeType || 'audio/webm';
+      var blob = new Blob(recordedChunks, { type: blobType });
+      var ext = blobType.indexOf('mp4') !== -1 ? 'm4a' : (blobType.indexOf('ogg') !== -1 ? 'ogg' : 'webm');
+      selectedFile = new File([blob], 'ghi_am_' + Date.now() + '.' + ext, { type: blobType });
+
+      var audioEl = document.getElementById('playbackAudio');
+      audioEl.src = URL.createObjectURL(blob);
+      document.getElementById('playbackBlock').classList.remove('hidden');
+      document.getElementById('submitBtn').disabled = false;
+
+      clearInterval(recordTimerInterval);
+      document.getElementById('recordTimer').classList.add('hidden');
+      btn.textContent = '🎙️ Bắt đầu ghi âm';
+
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(function(t) { t.stop(); });
+        mediaStream = null;
+      }
+    };
+
+    mediaRecorder.start();
+    recordSeconds = 0;
+    document.getElementById('recordTimer').classList.remove('hidden');
+    document.getElementById('recordTimer').textContent = '00:00';
+    document.getElementById('playbackBlock').classList.add('hidden');
+    btn.textContent = '⏹️ Dừng ghi âm';
+    recordTimerInterval = setInterval(function() {
+      recordSeconds++;
+      var mm = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+      var ss = String(recordSeconds % 60).padStart(2, '0');
+      document.getElementById('recordTimer').textContent = mm + ':' + ss;
+    }, 1000);
+
+  }).catch(function(err) {
+    showToast('Không mở được micro, kiểm tra lại quyền truy cập micro cho trình duyệt nhé');
+  });
+}
+
+function reRecord() {
+  selectedFile = null;
+  document.getElementById('playbackBlock').classList.add('hidden');
+  document.getElementById('submitBtn').disabled = true;
+}
+
+// =====================================================
+// CHỌN FILE GHI ÂM CÓ SẴN
+// =====================================================
+function onFileSelected() {
+  var input = document.getElementById('audioFileInput');
+  var label = document.getElementById('fileLabel');
+  var btn = document.getElementById('submitBtn');
+  if (input.files && input.files.length > 0) {
+    selectedFile = input.files[0];
+    label.textContent = '✅ ' + selectedFile.name;
+    label.classList.add('has-file');
+    document.getElementById('playbackBlock').classList.add('hidden');
+    btn.disabled = false;
   } else {
-    insertAssignment(null);
+    selectedFile = null;
+    label.textContent = '🎵 Bấm để chọn file ghi âm';
+    label.classList.remove('has-file');
+    btn.disabled = true;
   }
 }
 
-function loadAssignmentsForAudience(audience) {
-  var classIds = [];
-  for (var i = 0; i < assignmentClassesInKhoi.length; i++) classIds.push(assignmentClassesInKhoi[i].id);
+function submitVideo() {
+  if (!selectedFile) { showToast('Chưa có bản ghi âm nào'); return; }
+  var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
+  var practiceType = useFreeMode ? document.getElementById('freePracticeType').value : null;
+  var needsTextCapture = practiceType === 'reading' || practiceType === 'ielts_part1' || practiceType === 'ielts_part3';
+  var freeReadingText = (useFreeMode && needsTextCapture)
+    ? document.getElementById('freeReadingTextInput').value.trim()
+    : null;
+  var statusEl = document.getElementById('uploadStatus');
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  statusEl.textContent = 'Đang tải lên... vui lòng không tắt trình duyệt';
 
-  if (classIds.length === 0) { currentAssignmentsList = []; renderAssignmentsList(); return; }
+  var ext = selectedFile.name.split('.').pop();
+  var path = currentStudent.id + '/' + Date.now() + '.' + ext;
 
-  supabaseClient.from('sp_assignment_classes')
-    .select('assignment_id, class_id, sp_classes(name), sp_assignments(*)')
-    .in('class_id', classIds)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi tải bài giao: ' + res.error.message); return; }
-      var rows = res.data || [];
-      var grouped = {};
-      var order = [];
-      for (var i = 0; i < rows.length; i++) {
-        var r = rows[i];
-        if (!r.sp_assignments) continue;
-        var aid = r.assignment_id;
-        if (!grouped[aid]) {
-          grouped[aid] = Object.assign({}, r.sp_assignments, { _classNames: [] });
-          order.push(aid);
-        }
-        if (r.sp_classes && r.sp_classes.name) grouped[aid]._classNames.push(r.sp_classes.name);
+  function finishInsert(fileUrl, refImageUrl) {
+    supabaseClient.from('sp_submissions').insert({
+      student_id: currentStudent.id,
+      assignment_id: assignmentId,
+      video_url: fileUrl,
+      video_path: path,
+      reference_image_url: refImageUrl || null,
+      practice_type: practiceType,
+      reading_text: freeReadingText || null,
+      status: 'processing'
+    }).then(function(insertRes) {
+      statusEl.textContent = '';
+      btn.disabled = false;
+      if (insertRes.error) {
+        showToast('Lỗi lưu bài nộp: ' + insertRes.error.message);
+        return;
       }
-      var list = [];
-      for (var j = 0; j < order.length; j++) list.push(grouped[order[j]]);
-      list.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
-      currentAssignmentsList = list;
-      renderAssignmentsList();
+      showToast('Đã nộp bài! Đang chấm, bạn có thể quay lại xem sau.');
+      resetUploadForm();
+      loadSubmissions();
+    });
+  }
+
+  function uploadRefImageThen(fileUrl) {
+    if (!selectedRefImage || needsTextCapture) { finishInsert(fileUrl, null); return; }
+    var imgExt = selectedRefImage.name.split('.').pop();
+    var imgPath = currentStudent.id + '/' + Date.now() + '_ref.' + imgExt;
+    supabaseClient.storage.from('assignment-images').upload(imgPath, selectedRefImage)
+      .then(function(imgRes) {
+        if (imgRes.error) { finishInsert(fileUrl, null); return; }
+        var imgUrlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(imgPath);
+        finishInsert(fileUrl, imgUrlRes.data.publicUrl);
+      });
+  }
+
+  supabaseClient.storage.from('speaking-videos').upload(path, selectedFile)
+    .then(function(uploadRes) {
+      if (uploadRes.error) {
+        statusEl.textContent = '';
+        console.error('Upload error (real reason):', uploadRes.error);
+        showToast('Hệ thống đang xử lý khối lượng bài lớn, vui lòng thử nộp lại sau ít phút nhé 🙏');
+        btn.disabled = false;
+        return;
+      }
+      var publicUrlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
+      uploadRefImageThen(publicUrlRes.data.publicUrl);
     });
 }
 
-function assignmentTypeLabel(type) {
-  if (type === 'vocabulary') return 'Đọc từ vựng';
-  if (type === 'reading') return 'Luyện đọc';
-  if (type === 'ielts_part1') return 'IELTS Part 1';
-  if (type === 'ielts_part2') return 'IELTS Part 2';
-  if (type === 'ielts_part3') return 'IELTS Part 3';
-  return 'Thuyết trình';
+function resetUploadForm() {
+  selectedFile = null;
+  document.getElementById('audioFileInput').value = '';
+  var label = document.getElementById('fileLabel');
+  label.textContent = '🎵 Bấm để chọn file ghi âm';
+  label.classList.remove('has-file');
+  document.getElementById('playbackBlock').classList.add('hidden');
+  document.getElementById('submitBtn').disabled = true;
+
+  selectedRefImage = null;
+  document.getElementById('refImageInput').value = '';
+  var refLabel = document.getElementById('refImageLabel');
+  refLabel.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
+  refLabel.classList.remove('has-file');
+
+  var practiceTypeSel = document.getElementById('freePracticeType');
+  if (practiceTypeSel) practiceTypeSel.value = 'presentation';
+  var freeReadingInput = document.getElementById('freeReadingTextInput');
+  if (freeReadingInput) freeReadingInput.value = '';
+  onFreePracticeTypeChange();
 }
 
-function renderAssignmentsList() {
-  var box = document.getElementById('assignmentsListBox');
-  if (currentAssignmentsList.length === 0) {
-    box.innerHTML = '<p class="muted">Khối này chưa có bài giao nào</p>';
+// =====================================================
+// SUBMISSIONS LIST
+// =====================================================
+function loadSubmissions() {
+  supabaseClient.from('sp_submissions').select('*, sp_scores(*), sp_assignments(type)').eq('student_id', currentStudent.id)
+    .order('submitted_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
+      var list = res.data || [];
+      renderSubmissions(list);
+      scheduleAutoRefresh(list);
+
+      submittedAssignmentIds = {};
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].assignment_id) submittedAssignmentIds[list[i].assignment_id] = true;
+      }
+      if (currentAssignments.length > 0) renderAssignmentDropdown();
+    });
+}
+
+function scheduleAutoRefresh(list) {
+  if (autoRefreshTimer) { clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
+  var hasProcessing = false;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].status === 'processing') { hasProcessing = true; break; }
+  }
+  if (hasProcessing) {
+    autoRefreshTimer = setTimeout(function() {
+      loadSubmissions();
+    }, 15000);
+  }
+}
+
+var currentSubmissionsList = [];
+
+function renderSubmissions(list) {
+  currentSubmissionsList = list;
+  var box = document.getElementById('submissionsList');
+  if (list.length === 0) {
+    box.innerHTML = '<p class="muted">Chưa có bài nộp nào</p>';
     return;
   }
   var html = '';
-  for (var i = 0; i < currentAssignmentsList.length; i++) {
-    var a = currentAssignmentsList[i];
-    html += '<div class="card" style="margin-bottom:10px;">';
-    html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
-    html += '<div>';
-    html += '<b>' + escapeHtml(a.topic) + '</b>';
-    html += ' <span class="pill">' + assignmentTypeLabel(a.type) + '</span>';
-    if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
-    if (a._classNames && a._classNames.length > 0) {
-      html += '<div class="muted" style="margin-top:6px;">Giao cho lớp: ' + escapeHtml(a._classNames.join(', ')) + '</div>';
+  for (var i = 0; i < list.length; i++) {
+    var sub = list[i];
+    var score = null;
+    if (sub.sp_scores) {
+      score = Array.isArray(sub.sp_scores) ? sub.sp_scores[0] : sub.sp_scores;
     }
-    if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
-    if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;">Bài đọc mẫu: "' + escapeHtml(a.reading_text) + '"</div>';
-    if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
+    var dateStr = formatDate(sub.submitted_at);
+
+    var effectiveType = 'presentation';
+    if (sub.sp_assignments && sub.sp_assignments.type) effectiveType = sub.sp_assignments.type;
+    else if (sub.practice_type) effectiveType = sub.practice_type;
+    var isIeltsSub = effectiveType.indexOf('ielts') === 0;
+
+    html += '<div class="sub-item" onclick="toggleDetail(' + i + ')">';
+    html += '<div class="sub-item-header">';
+    html += '<div><b>' + dateStr + '</b></div>';
+    html += '<div class="row" style="gap:8px;">' + statusBadge(sub.status) + '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button></div>';
     html += '</div>';
-    html += '<button class="btn-danger btn-sm" onclick="deleteAssignment(\'' + a.id + '\')">Xóa</button>';
-    html += '</div>';
-    if (a.reference_image_url) {
-      html += '<img src="' + a.reference_image_url + '" style="max-width:200px;border-radius:8px;margin-top:10px;">';
+
+    if (sub.status === 'graded' && score) {
+      var scoreLabel = score.overall_score !== null ? score.overall_score : '-';
+      scoreLabel = isIeltsSub ? ('Band ' + scoreLabel) : (scoreLabel + '/10');
+      html += '<div style="margin-top:8px;" class="score-big">' + scoreLabel + '</div>';
+      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(addFeedbackIcons(score.detailed_feedback || '')) + '</div>';
+    } else if (sub.status === 'invalid') {
+      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml((score && score.invalid_reason) || 'Bài chưa đạt yêu cầu, vui lòng nộp lại.') + '</div>';
+    } else if (sub.status === 'processing') {
+      html += '<div class="muted" style="margin-top:8px;">Đang chấm, quay lại sau nhé...</div>';
+    } else {
+      html += '<div class="muted" style="margin-top:8px;">Có lỗi khi chấm bài này, thử nộp lại giúp mình nhé.</div>';
     }
     html += '</div>';
   }
   box.innerHTML = html;
 }
 
-function deleteAssignment(id) {
-  if (!confirm('Xóa bài giao này?')) return;
-  supabaseClient.from('sp_assignments').delete().eq('id', id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã xóa bài giao');
-      var audience = document.getElementById('assignmentAudienceSelect').value;
-      loadAssignmentsForAudience(audience);
+function deleteSubmission(index) {
+  var sub = currentSubmissionsList[index];
+  if (!sub) return;
+  if (!confirm('Xóa bài nộp này? Không thể khôi phục lại.')) return;
+
+  var afterDbDelete = function() {
+    supabaseClient.from('sp_submissions').delete().eq('id', sub.id).then(function(res) {
+      if (res.error) { showToast('Lỗi xóa: ' + res.error.message); return; }
+      showToast('Đã xóa bài nộp');
+      loadSubmissions();
     });
+  };
+
+  if (sub.video_path) {
+    supabaseClient.storage.from('speaking-videos').remove([sub.video_path]).then(function() {
+      afterDbDelete();
+    });
+  } else {
+    afterDbDelete();
+  }
+}
+
+function toggleDetail(index) {
+  var el = document.getElementById('detail_' + index);
+  if (el) el.classList.toggle('hidden');
+}
+
+
+function statusBadge(status) {
+  if (status === 'graded') return '<span class="badge badge-graded">Đã chấm</span>';
+  if (status === 'invalid') return '<span class="badge badge-invalid">Không hợp lệ</span>';
+  if (status === 'processing') return '<span class="badge badge-processing">Đang chấm</span>';
+  return '<span class="badge badge-error">Lỗi</span>';
+}
+
+function formatDate(iso) {
+  var d = new Date(iso);
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  var hh = String(d.getHours()).padStart(2, '0');
+  var mi = String(d.getMinutes()).padStart(2, '0');
+  return dd + '/' + mm + '/' + yyyy + ' ' + hh + ':' + mi;
+}
+
+// =====================================================
+// UTIL
+// =====================================================
+function addFeedbackIcons(text) {
+  if (!text) return text;
+  var iconMap = [
+    ['Nội dung:', '📝 Nội dung:'],
+    ['Từ vựng:', '📚 Từ vựng:'],
+    ['Ngữ pháp:', '✏️ Ngữ pháp:'],
+    ['Phát âm:', '🗣️ Phát âm:'],
+    ['Tự tin:', '💪 Tự tin:'],
+    ['Đọc đúng bài:', '📖 Đọc đúng bài:'],
+    ['Trôi chảy & Mạch lạc:', '🌊 Trôi chảy & Mạch lạc:'],
+    ['Trôi chảy:', '🌊 Trôi chảy:'],
+    ['Vốn từ vựng:', '📚 Vốn từ vựng:'],
+    ['Ngữ pháp (đa dạng & chính xác):', '✏️ Ngữ pháp (đa dạng & chính xác):'],
+    ['Lời khen:', '🌟 Lời khen:']
+  ];
+  var result = text;
+  for (var i = 0; i < iconMap.length; i++) {
+    var label = iconMap[i][0];
+    var replacement = iconMap[i][1];
+    var escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp('(^|\\n)' + escapedLabel, 'g');
+    result = result.replace(regex, function(match, p1) { return p1 + replacement; });
+  }
+  return result;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showToast(msg) {
+  var box = document.getElementById('toastBox');
+  var el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  box.innerHTML = '';
+  box.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
 }
 
 initApp();
