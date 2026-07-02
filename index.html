@@ -890,6 +890,10 @@ function renderSubmissions(list) {
       scoreLabel = isIeltsSub ? ('Band ' + scoreLabel) : (scoreLabel + '/10');
       html += '<div style="margin-top:8px;" class="score-big">' + scoreLabel + '</div>';
       html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(addFeedbackIcons(score.detailed_feedback || '')) + '</div>';
+      if (isIeltsSub) {
+        html += '<button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="event.stopPropagation();analyzeSubmissionDetailStudent(\'' + sub.id + '\', this)">📝 Xem transcript + bản nâng cấp</button>';
+        html += '<div id="analysisBox_' + sub.id + '" class="hidden" style="margin-top:12px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;"></div>';
+      }
     } else if (sub.status === 'invalid') {
       html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml((score && score.invalid_reason) || 'Bài chưa đạt yêu cầu, vui lòng nộp lại.') + '</div>';
     } else if (sub.status === 'processing') {
@@ -929,6 +933,55 @@ function toggleDetail(index) {
   if (el) el.classList.toggle('hidden');
 }
 
+
+function analyzeSubmissionDetailStudent(submissionId, btn) {
+  var box = document.getElementById('analysisBox_' + submissionId);
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang phân tích (có thể mất 30-60 giây)...';
+  box.classList.remove('hidden');
+  box.innerHTML = '<p class="muted">Đang gửi lên Gemini phân tích, vui lòng chờ...</p>';
+
+  supabaseClient.functions.invoke('analyze-submission', {
+    body: { submission_id: submissionId }
+  }).then(function(res) {
+    btn.disabled = false;
+    btn.textContent = '📝 Xem transcript + bản nâng cấp';
+    if (res.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
+      return;
+    }
+    var payload = res.data;
+    if (!payload || payload.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
+      return;
+    }
+    renderAnalysisResultStudent(box, payload.data);
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = '📝 Xem transcript + bản nâng cấp';
+    box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(String(err)) + '</p>';
+  });
+}
+
+function renderAnalysisResultStudent(box, data) {
+  if (!data) { box.innerHTML = '<p class="muted">Không có dữ liệu</p>'; return; }
+  var html = '';
+  html += '<p class="muted" style="margin:0 0 6px 0;">📄 Transcript (nguyên văn):</p>';
+  html += '<p style="margin:0 0 14px 0;font-style:italic;line-height:1.6;">' + escapeHtml(data.transcript || '') + '</p>';
+  html += '<p class="muted" style="margin:0 0 6px 0;">🇻🇳 Bản dịch:</p>';
+  html += '<p style="margin:0 0 14px 0;line-height:1.6;">' + escapeHtml(data.translation_vi || '') + '</p>';
+  html += '<p class="muted" style="margin:0 0 6px 0;">🔍 Phân tích lỗi chi tiết:</p>';
+  html += '<div style="margin:0 0 14px 0;white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.detailed_analysis || '') + '</div>';
+  if (data.polished_version) {
+    html += '<p class="muted" style="margin:0 0 6px 0;">✨ Bản nâng cấp (giữ nguyên ý, nâng từ vựng/ngữ pháp):</p>';
+    html += '<div style="margin:0 0 14px 0;padding:12px;background:#171d2e;border-radius:8px;border:1px solid #4c6fff;white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.polished_version) + '</div>';
+  }
+  if (data.key_phrases) {
+    html += '<p class="muted" style="margin:0 0 6px 0;">🌟 Từ/cụm từ mới đáng học:</p>';
+    html += '<div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.key_phrases) + '</div>';
+  }
+  box.innerHTML = html;
+}
 
 function statusBadge(status) {
   if (status === 'graded') return '<span class="badge badge-graded">Đã chấm</span>';
