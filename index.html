@@ -158,13 +158,13 @@
     <h2>Nộp bài mới</h2>
 
     <div class="hidden" id="assignmentBlock">
-      <label>📋 Các bài tập cần hoàn thành</label>
+      <h2 style="margin-top:0;">📋 Các bài tập cần hoàn thành</h2>
       <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
-      <p class="muted" style="margin-top:6px;"><a href="#" onclick="toggleFreeMode(true);return false;" style="color:#9db4ff;">Không làm theo bài giao, tự chọn nội dung khác luyện tập »</a></p>
+      <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
     </div>
 
     <div id="freePracticeBlock" style="margin-top:16px;">
-      <label id="freePracticeLabel">Chọn nội dung cần luyện tập:</label>
+      <label id="freePracticeLabel">Học sinh tự luyện</label>
       <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
         <optgroup label="Luyện tập" id="freeOptgroupGeneral">
           <option value="presentation">Thuyết trình theo tranh</option>
@@ -404,18 +404,28 @@ function loadAssignments() {
 function renderAssignmentDropdown() {
   var sel = document.getElementById('assignmentSelect');
   var currentValue = sel.value;
-  var html = '';
+
+  var undone = [];
+  var done = [];
   for (var i = 0; i < currentAssignments.length; i++) {
     var a = currentAssignments[i];
-    var doneMark = submittedAssignmentIds[a.id] ? ' ✅ Đã nộp' : '';
-    html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + doneMark + '</option>';
+    if (submittedAssignmentIds[a.id]) done.push(a);
+    else undone.push(a);
+  }
+  var sortedAssignments = undone.concat(done);
+
+  var html = '';
+  for (var j = 0; j < sortedAssignments.length; j++) {
+    var b = sortedAssignments[j];
+    var doneMark = submittedAssignmentIds[b.id] ? ' ✅ Đã nộp' : '';
+    html += '<option value="' + b.id + '">' + escapeHtml(b.topic) + doneMark + '</option>';
   }
   sel.innerHTML = html;
-  // giữ lại lựa chọn cũ nếu còn hợp lệ, không thì mặc định bài giao mới nhất (đầu danh sách)
+  // giữ lại lựa chọn cũ nếu còn hợp lệ, không thì mặc định bài CHƯA làm đầu tiên
   if (currentValue && html.indexOf('value="' + currentValue + '"') !== -1) {
     sel.value = currentValue;
-  } else if (currentAssignments.length > 0) {
-    sel.value = currentAssignments[0].id;
+  } else if (sortedAssignments.length > 0) {
+    sel.value = sortedAssignments[0].id;
   }
   applyModeVisibility();
 }
@@ -503,7 +513,7 @@ function applyAudienceToFreePractice() {
   generalGroup.style.display = isIelts ? 'none' : '';
   ieltsGroup.style.display = isIelts ? '' : 'none';
   sel.value = isIelts ? 'ielts_part2' : 'presentation';
-  label.textContent = isIelts ? 'Chọn phần IELTS cần luyện tập:' : 'Chọn nội dung cần luyện tập:';
+  label.textContent = 'Học sinh tự luyện';
 }
 
 function onFreePracticeTypeChange() {
