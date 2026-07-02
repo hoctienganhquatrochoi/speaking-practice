@@ -839,7 +839,7 @@ function loadSubmissions() {
       for (var i = 0; i < list.length; i++) {
         if (list[i].assignment_id) submittedAssignmentIds[list[i].assignment_id] = true;
       }
-      if (currentAssignments.length > 0) renderAssignmentDropdown();
+      renderAssignmentDropdown(); // luôn vẽ lại, tránh lỡ nhịp khi 2 lượt tải chạy song song
     });
 }
 
