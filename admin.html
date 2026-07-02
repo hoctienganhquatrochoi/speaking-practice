@@ -255,6 +255,7 @@
           <th style="width:130px;">SĐT Zalo</th>
           <th>Phụ huynh</th>
           <th>Tài khoản</th>
+          <th style="width:160px;">Chuyển lớp</th>
           <th style="width:150px;"></th>
         </tr></thead>
         <tbody id="studentsTableBody"></tbody>
@@ -284,12 +285,12 @@
       <h2>Tạo bài giao mới</h2>
       <label>Loại bài</label>
       <select id="newAssignmentType" onchange="onAssignmentTypeChange()">
-        <optgroup label="Tiểu học / Cấp 2 / Cấp 3" id="optgroupGeneral">
+        <optgroup label="" id="optgroupGeneral">
           <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
           <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
           <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
         </optgroup>
-        <optgroup label="IELTS" id="optgroupIelts">
+        <optgroup label="" id="optgroupIelts">
           <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
           <option value="ielts_part2">IELTS Part 2 — Cue Card (nói độc thoại 1-2 phút)</option>
           <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
@@ -689,6 +690,19 @@ function renderStudentsTable() {
     html += '<td><input type="text" value="' + escapeHtml(s.parent_phone) + '" placeholder="0912xxxxxx" oninput="updateStudentField(' + i + ',\'parent_phone\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.parent_name) + '" placeholder="Tên PH" oninput="updateStudentField(' + i + ',\'parent_name\',this.value)"></td>';
     html += '<td id="studentUsernameCell_' + i + '">' + (s.username ? '<span class="pill">' + escapeHtml(s.username) + '</span>' : '<span class="muted">Chưa lưu</span>') + '</td>';
+    html += '<td>';
+    if (s.id) {
+      html += '<select onchange="transferStudentClass(\'' + s.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
+      for (var k = 0; k < currentClasses.length; k++) {
+        var cls = currentClasses[k];
+        var isCurrent = document.getElementById('classSelect').value === cls.id;
+        html += '<option value="' + cls.id + '"' + (isCurrent ? ' selected' : '') + '>' + escapeHtml(cls.name) + '</option>';
+      }
+      html += '</select>';
+    } else {
+      html += '<span class="muted">—</span>';
+    }
+    html += '</td>';
     html += '<td id="studentActionsCell_' + i + '">';
     if (s.id) html += '<button class="btn-secondary btn-sm" onclick="resetStudentPassword(\'' + s.id + '\')">Reset MK</button> ';
     html += '<button class="btn-danger btn-sm" onclick="deleteStudentRow(' + i + ')">Xóa</button>';
@@ -796,6 +810,19 @@ function deleteStudentRow(index) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       showToast('Đã xóa học sinh');
       loadStudents();
+    });
+}
+
+function transferStudentClass(studentId, newClassId) {
+  if (!confirm('Chuyển học sinh này sang lớp khác? Toàn bộ lịch sử bài nộp/điểm sẽ được giữ nguyên.')) {
+    renderStudentsTable(); // hủy thao tác, vẽ lại dropdown về đúng lớp cũ
+    return;
+  }
+  supabaseClient.from('sp_students').update({ class_id: newClassId }).eq('id', studentId)
+    .then(function(res) {
+      if (res.error) { showToast('Lỗi chuyển lớp: ' + res.error.message); return; }
+      showToast('Đã chuyển lớp thành công');
+      loadStudents(); // học sinh biến mất khỏi danh sách lớp cũ, load lại đúng lớp đang chọn
     });
 }
 
