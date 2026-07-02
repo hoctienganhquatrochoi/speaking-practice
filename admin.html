@@ -1501,7 +1501,17 @@ function renderAnalysisResult(box, data) {
   html += '<p class="muted" style="margin:0 0 6px 0;">🇻🇳 Bản dịch:</p>';
   html += '<p style="margin:0 0 14px 0;line-height:1.6;">' + escapeHtml(data.translation_vi || '') + '</p>';
   html += '<p class="muted" style="margin:0 0 6px 0;">🔍 Phân tích lỗi chi tiết:</p>';
-  html += '<div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.detailed_analysis || '') + '</div>';
+  html += '<div style="margin:0 0 14px 0;white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.detailed_analysis || '') + '</div>';
+
+  if (data.polished_version) {
+    html += '<p class="muted" style="margin:0 0 6px 0;">✨ Bản nâng cấp (giữ nguyên ý, nâng từ vựng/ngữ pháp):</p>';
+    html += '<div style="margin:0 0 14px 0;padding:12px;background:#171d2e;border-radius:8px;border:1px solid #4c6fff;white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.polished_version) + '</div>';
+  }
+  if (data.key_phrases) {
+    html += '<p class="muted" style="margin:0 0 6px 0;">🌟 Từ/cụm từ mới đáng học:</p>';
+    html += '<div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.key_phrases) + '</div>';
+  }
+
   box.innerHTML = html;
 }
 
