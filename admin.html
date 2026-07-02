@@ -1344,7 +1344,10 @@ function renderAssignmentsList() {
     html += '<button class="btn-danger btn-sm" onclick="deleteAssignment(\'' + a.id + '\')">Xóa</button>';
     html += '</div>';
     if (a.reference_image_url) {
-      html += '<img src="' + a.reference_image_url + '" style="max-width:200px;border-radius:8px;margin-top:10px;">';
+      html += '<div style="margin-top:10px;">';
+      html += '<img src="' + a.reference_image_url + '" style="max-width:200px;border-radius:8px;display:block;">';
+      html += '<button class="btn-secondary btn-sm" style="margin-top:6px;" onclick="downloadAdminImage(\'' + a.reference_image_url + '\',\'bai-giao-' + a.id + '\')">⬇️ Tải ảnh</button>';
+      html += '</div>';
     }
     html += '</div>';
   }
@@ -1451,7 +1454,10 @@ function renderStudentResults(list) {
       html += '<audio controls src="' + sub.video_url + '" style="width:100%;margin-top:10px;"></audio>';
     }
     if (sub.reference_image_url) {
-      html += '<img src="' + sub.reference_image_url + '" style="max-width:200px;border-radius:8px;margin-top:10px;">';
+      html += '<div style="margin-top:10px;">';
+      html += '<img src="' + sub.reference_image_url + '" style="max-width:200px;border-radius:8px;display:block;">';
+      html += '<button class="btn-secondary btn-sm" style="margin-top:6px;" onclick="downloadAdminImage(\'' + sub.reference_image_url + '\',\'de-bai-' + sub.id + '\')">⬇️ Tải ảnh</button>';
+      html += '</div>';
     }
     html += '</div>';
   }
@@ -1497,6 +1503,25 @@ function renderAnalysisResult(box, data) {
   html += '<p class="muted" style="margin:0 0 6px 0;">🔍 Phân tích lỗi chi tiết:</p>';
   html += '<div style="white-space:pre-wrap;line-height:1.6;font-size:14px;">' + escapeHtml(data.detailed_analysis || '') + '</div>';
   box.innerHTML = html;
+}
+
+function downloadAdminImage(url, filenameBase) {
+  fetch(url)
+    .then(function(res) { return res.blob(); })
+    .then(function(blob) {
+      var ext = (url.split('.').pop() || 'jpg').split('?')[0];
+      var a = document.createElement('a');
+      var objUrl = URL.createObjectURL(blob);
+      a.href = objUrl;
+      a.download = filenameBase + '.' + ext;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objUrl);
+    })
+    .catch(function(err) {
+      showToast('Không tải được ảnh: ' + err.message);
+    });
 }
 
 function statusBadgeAdmin(status) {
