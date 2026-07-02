@@ -103,6 +103,18 @@
     border-radius: 8px;
   }
   .tab-btn.active { background: #4c6fff; color: #fff; border-color: #4c6fff; }
+  .file-input-label {
+    display: block;
+    border: 2px dashed #2a3350;
+    border-radius: 10px;
+    padding: 24px 12px;
+    text-align: center;
+    color: #9db4ff;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .file-input-label.has-file { border-color: #4c6fff; color: #e8ebf2; }
+  #assignmentImageInput { display: none; }
   .credbox {
     background: #0f1420;
     border: 1px dashed #4c6fff;
@@ -631,13 +643,23 @@ function autoSaveStudentRow(index) {
   var dobIso = convertDateToIso(s.dobDisplay);
 
   if (s.id) {
+    var usernameToSave = (s.username || '').trim();
+    if (!usernameToSave) return; // không cho lưu tên tài khoản rỗng
+
     supabaseClient.from('sp_students').update({
       name: s.name.trim(),
       dob: dobIso,
       parent_name: s.parent_name || null,
-      parent_phone: s.parent_phone || null
+      parent_phone: s.parent_phone || null,
+      username: usernameToSave
     }).eq('id', s.id).then(function(res) {
-      if (res.error) showToast('Lỗi lưu: ' + res.error.message);
+      if (res.error) {
+        if (res.error.code === '23505') {
+          showToast('Tên tài khoản này đã có người dùng, chọn tên khác nhé');
+        } else {
+          showToast('Lỗi lưu: ' + res.error.message);
+        }
+      }
     });
   } else {
     if (s._saving) return; // tránh tạo trùng nếu đang lưu dở
@@ -689,7 +711,7 @@ function renderStudentsTable() {
     html += '<td><input type="text" value="' + escapeHtml(s.dobDisplay) + '" placeholder="dd/mm/yyyy" oninput="updateStudentField(' + i + ',\'dobDisplay\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.parent_phone) + '" placeholder="0912xxxxxx" oninput="updateStudentField(' + i + ',\'parent_phone\',this.value)"></td>';
     html += '<td><input type="text" value="' + escapeHtml(s.parent_name) + '" placeholder="Tên PH" oninput="updateStudentField(' + i + ',\'parent_name\',this.value)"></td>';
-    html += '<td id="studentUsernameCell_' + i + '">' + (s.username ? '<span class="pill">' + escapeHtml(s.username) + '</span>' : '<span class="muted">Chưa lưu</span>') + '</td>';
+    html += '<td id="studentUsernameCell_' + i + '">' + (s.id ? '<input type="text" value="' + escapeHtml(s.username) + '" oninput="updateStudentField(' + i + ',\'username\',this.value)" style="width:130px;">' : '<span class="muted">Chưa lưu</span>') + '</td>';
     html += '<td>';
     if (s.id) {
       html += '<select onchange="transferStudentClass(\'' + s.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
@@ -768,12 +790,18 @@ function saveStudentAtIndex(index, classId, newlyCreated) {
   var dobIso = convertDateToIso(s.dobDisplay);
   if (s.id) {
     // update existing
+    var usernameToSave = (s.username || '').trim();
     supabaseClient.from('sp_students').update({
       name: s.name.trim(),
       dob: dobIso,
       parent_name: s.parent_name || null,
-      parent_phone: s.parent_phone || null
+      parent_phone: s.parent_phone || null,
+      username: usernameToSave || s.username
     }).eq('id', s.id).then(function(res) {
+      if (res.error) {
+        if (res.error.code === '23505') showToast('Tên tài khoản trùng cho học sinh "' + s.name + '", chưa lưu được tên tài khoản này');
+        else showToast('Lỗi lưu "' + s.name + '": ' + res.error.message);
+      }
       saveStudentAtIndex(index + 1, classId, newlyCreated);
     });
   } else {
