@@ -177,9 +177,19 @@
 
     <div class="hidden" id="assignmentBlock">
       <label>Bài giao</label>
-      <select id="assignmentSelect">
+      <select id="assignmentSelect" onchange="onAssignmentChange()">
         <option value="">Bài tự do (không theo bài giao)</option>
       </select>
+    </div>
+
+    <div id="freeImageBlock" style="margin-top:16px;">
+      <label>Đính kèm ảnh đề bài (tùy chọn — VD ảnh cần mô tả/so sánh)</label>
+      <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn ảnh</label>
+      <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
+    </div>
+    <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
+      <p class="muted">Ảnh đề bài của bài giao này:</p>
+      <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
     </div>
 
     <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
@@ -189,8 +199,9 @@
   <div class="card">
     <div class="row" style="justify-content:space-between;">
       <h2 style="margin:0;">Bài đã nộp</h2>
-      <button class="btn-secondary btn-sm" onclick="loadSubmissions()">🔄 Làm mới</button>
+      <button class="btn-secondary btn-sm" onclick="loadSubmissions()">🔄 Kiểm tra ngay</button>
     </div>
+    <p class="muted" style="margin-top:4px;">Bài "Đang chấm" sẽ tự động cập nhật, không cần bấm nút này.</p>
     <div id="submissionsList" style="margin-top:14px;"></div>
   </div>
 </div>
@@ -220,6 +231,8 @@ var supabaseClient = null;
 var currentStudent = null; // { id, name, class_id }
 var currentAssignments = [];
 var selectedFile = null;
+var selectedRefImage = null;
+var autoRefreshTimer = null;
 var mediaRecorder = null;
 var recordedChunks = [];
 var recordTimerInterval = null;
@@ -350,7 +363,50 @@ function loadAssignments() {
       var block = document.getElementById('assignmentBlock');
       if (currentAssignments.length > 0) block.classList.remove('hidden');
       else block.classList.add('hidden');
+      onAssignmentChange();
     });
+}
+
+function onAssignmentChange() {
+  var assignmentId = document.getElementById('assignmentSelect').value;
+  var freeImageBlock = document.getElementById('freeImageBlock');
+  var previewBlock = document.getElementById('assignmentImagePreview');
+
+  if (!assignmentId) {
+    // Bài tự do -> cho học sinh tự đính ảnh nếu muốn
+    freeImageBlock.classList.remove('hidden');
+    previewBlock.classList.add('hidden');
+    return;
+  }
+
+  var chosen = null;
+  for (var i = 0; i < currentAssignments.length; i++) {
+    if (currentAssignments[i].id === assignmentId) { chosen = currentAssignments[i]; break; }
+  }
+
+  if (chosen && chosen.reference_image_url) {
+    // Bài giao đã có sẵn ảnh -> không cần học sinh tự đính nữa
+    freeImageBlock.classList.add('hidden');
+    document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
+    previewBlock.classList.remove('hidden');
+  } else {
+    freeImageBlock.classList.remove('hidden');
+    previewBlock.classList.add('hidden');
+  }
+}
+
+function onRefImageSelected() {
+  var input = document.getElementById('refImageInput');
+  var label = document.getElementById('refImageLabel');
+  if (input.files && input.files.length > 0) {
+    selectedRefImage = input.files[0];
+    label.textContent = '✅ ' + selectedRefImage.name;
+    label.classList.add('has-file');
+  } else {
+    selectedRefImage = null;
+    label.textContent = '🖼️ Bấm để chọn ảnh';
+    label.classList.remove('has-file');
+  }
 }
 
 // =====================================================
@@ -470,6 +526,39 @@ function submitVideo() {
   var ext = selectedFile.name.split('.').pop();
   var path = currentStudent.id + '/' + Date.now() + '.' + ext;
 
+  function finishInsert(fileUrl, refImageUrl) {
+    supabaseClient.from('sp_submissions').insert({
+      student_id: currentStudent.id,
+      assignment_id: assignmentId,
+      video_url: fileUrl,
+      video_path: path,
+      reference_image_url: refImageUrl || null,
+      status: 'processing'
+    }).then(function(insertRes) {
+      statusEl.textContent = '';
+      btn.disabled = false;
+      if (insertRes.error) {
+        showToast('Lỗi lưu bài nộp: ' + insertRes.error.message);
+        return;
+      }
+      showToast('Đã nộp bài! Đang chấm, bạn có thể quay lại xem sau.');
+      resetUploadForm();
+      loadSubmissions();
+    });
+  }
+
+  function uploadRefImageThen(fileUrl) {
+    if (!selectedRefImage) { finishInsert(fileUrl, null); return; }
+    var imgExt = selectedRefImage.name.split('.').pop();
+    var imgPath = currentStudent.id + '/' + Date.now() + '_ref.' + imgExt;
+    supabaseClient.storage.from('assignment-images').upload(imgPath, selectedRefImage)
+      .then(function(imgRes) {
+        if (imgRes.error) { finishInsert(fileUrl, null); return; }
+        var imgUrlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(imgPath);
+        finishInsert(fileUrl, imgUrlRes.data.publicUrl);
+      });
+  }
+
   supabaseClient.storage.from('speaking-videos').upload(path, selectedFile)
     .then(function(uploadRes) {
       if (uploadRes.error) {
@@ -480,25 +569,7 @@ function submitVideo() {
         return;
       }
       var publicUrlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
-      var fileUrl = publicUrlRes.data.publicUrl;
-
-      supabaseClient.from('sp_submissions').insert({
-        student_id: currentStudent.id,
-        assignment_id: assignmentId,
-        video_url: fileUrl,
-        video_path: path,
-        status: 'processing'
-      }).then(function(insertRes) {
-        statusEl.textContent = '';
-        btn.disabled = false;
-        if (insertRes.error) {
-          showToast('Lỗi lưu bài nộp: ' + insertRes.error.message);
-          return;
-        }
-        showToast('Đã nộp bài! Đang chấm, bạn có thể quay lại xem sau.');
-        resetUploadForm();
-        loadSubmissions();
-      });
+      uploadRefImageThen(publicUrlRes.data.publicUrl);
     });
 }
 
@@ -510,6 +581,12 @@ function resetUploadForm() {
   label.classList.remove('has-file');
   document.getElementById('playbackBlock').classList.add('hidden');
   document.getElementById('submitBtn').disabled = true;
+
+  selectedRefImage = null;
+  document.getElementById('refImageInput').value = '';
+  var refLabel = document.getElementById('refImageLabel');
+  refLabel.textContent = '🖼️ Bấm để chọn ảnh';
+  refLabel.classList.remove('has-file');
 }
 
 // =====================================================
@@ -520,8 +597,23 @@ function loadSubmissions() {
     .order('submitted_at', { ascending: false })
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
-      renderSubmissions(res.data || []);
+      var list = res.data || [];
+      renderSubmissions(list);
+      scheduleAutoRefresh(list);
     });
+}
+
+function scheduleAutoRefresh(list) {
+  if (autoRefreshTimer) { clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
+  var hasProcessing = false;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].status === 'processing') { hasProcessing = true; break; }
+  }
+  if (hasProcessing) {
+    autoRefreshTimer = setTimeout(function() {
+      loadSubmissions();
+    }, 15000);
+  }
 }
 
 var currentSubmissionsList = [];
