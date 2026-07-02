@@ -38,6 +38,28 @@
     width: 100%;
   }
   input:focus, select:focus, textarea:focus { outline: 2px solid #4c6fff; border-color: #4c6fff; }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e8ebf2;
+    -webkit-box-shadow: 0 0 0px 1000px #0f1420 inset;
+    box-shadow: 0 0 0px 1000px #0f1420 inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  .pwrow { position: relative; }
+  .pwrow input { padding-right: 40px; }
+  .pw-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #8891a8;
+    font-size: 13px;
+    cursor: pointer;
+  }
   label { display: block; font-size: 13px; color: #9db4ff; margin-bottom: 6px; margin-top: 12px; }
   button {
     cursor: pointer;
@@ -131,7 +153,10 @@
   <h1>🎤 Speaking Practice</h1>
   <p class="sub">Trang quản trị</p>
   <label>Mật khẩu Admin</label>
-  <input type="password" id="loginPassword" placeholder="Nhập mật khẩu">
+  <div class="pwrow">
+    <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" onkeydown="if(event.key==='Enter')doLogin();">
+    <button type="button" class="pw-toggle" onclick="togglePw('loginPassword', this)">Hiện</button>
+  </div>
   <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="doLogin()">Đăng nhập</button>
 </div>
 
@@ -243,7 +268,10 @@
   <div class="modal-box">
     <h2>Đổi mật khẩu Admin</h2>
     <label>Mật khẩu mới</label>
-    <input type="password" id="newAdminPassword" placeholder="Nhập mật khẩu mới">
+    <div class="pwrow">
+      <input type="password" id="newAdminPassword" placeholder="Nhập mật khẩu mới">
+      <button type="button" class="pw-toggle" onclick="togglePw('newAdminPassword', this)">Hiện</button>
+    </div>
     <div class="row" style="margin-top:16px;">
       <button class="btn-secondary" onclick="closeChangePasswordModal()">Hủy</button>
       <button class="btn-primary" onclick="saveNewAdminPassword()">Lưu</button>
@@ -662,6 +690,17 @@ function importNextStudent(index, classId) {
 // =====================================================
 // UTIL
 // =====================================================
+function togglePw(inputId, btn) {
+  var el = document.getElementById(inputId);
+  if (el.type === 'password') {
+    el.type = 'text';
+    btn.textContent = 'Ẩn';
+  } else {
+    el.type = 'password';
+    btn.textContent = 'Hiện';
+  }
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
