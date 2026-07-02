@@ -195,13 +195,20 @@
           <input type="text" id="newClassCurriculum" placeholder="VD: Family and Friends 1">
         </div>
       </div>
+      <label>Đối tượng (quyết định khung chấm + giọng nhận xét)</label>
+      <select id="newClassAudience">
+        <option value="elementary">Tiểu học</option>
+        <option value="middle">Cấp 2</option>
+        <option value="high">Cấp 3</option>
+        <option value="ielts">IELTS</option>
+      </select>
       <button class="btn-primary" style="margin-top:14px;" onclick="addClass()">+ Thêm lớp</button>
     </div>
 
     <div class="card">
       <h2>Danh sách lớp</h2>
       <table>
-        <thead><tr><th>Tên lớp</th><th>Giáo trình</th><th>Số học sinh</th><th></th></tr></thead>
+        <thead><tr><th>Tên lớp</th><th>Giáo trình</th><th>Đối tượng</th><th>Số học sinh</th><th></th></tr></thead>
         <tbody id="classesTableBody"></tbody>
       </table>
     </div>
@@ -259,28 +266,40 @@
   <div id="tabAssignments" class="hidden">
     <div class="card">
       <h2>Chọn lớp</h2>
-      <select id="assignmentClassSelect" onchange="loadAssignmentsAdmin()"></select>
+      <select id="assignmentClassSelect" onchange="onAssignmentClassChange()"></select>
+      <p class="muted" id="assignmentClassAudienceNote" style="margin-top:8px;"></p>
     </div>
 
     <div class="card">
       <h2>Tạo bài giao mới</h2>
       <label>Loại bài</label>
       <select id="newAssignmentType" onchange="onAssignmentTypeChange()">
-        <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
-        <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
-        <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
+        <optgroup label="Tiểu học / Cấp 2 / Cấp 3" id="optgroupGeneral">
+          <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
+          <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
+          <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
+        </optgroup>
+        <optgroup label="IELTS" id="optgroupIelts">
+          <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
+          <option value="ielts_part2">IELTS Part 2 — Cue Card (nói độc thoại 1-2 phút)</option>
+          <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
+        </optgroup>
       </select>
       <div id="readingTextBlock" class="hidden">
         <label>Nội dung bài đọc mẫu (bắt buộc cho loại này — dán nguyên văn để Gemini đối chiếu)</label>
         <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
       </div>
-      <label>Chủ đề</label>
+      <div id="questionsTextBlock" class="hidden">
+        <label>Danh sách câu hỏi (mỗi câu 1 dòng — học sinh sẽ đọc và trả lời lần lượt trong 1 lần ghi âm)</label>
+        <textarea id="newAssignmentQuestionsText" rows="5" placeholder="VD:&#10;What is your hometown like?&#10;Do you work or study?&#10;What do you usually do in your free time?"></textarea>
+      </div>
+      <label>Chủ đề <span class="muted" id="topicHintText">(VD: So sánh 2 bức tranh Unit 2 - Playtime)</span></label>
       <input type="text" id="newAssignmentTopic" placeholder="VD: So sánh 2 bức tranh Unit 2 - Playtime">
-      <label>Mô tả thêm (tùy chọn)</label>
+      <label>Mô tả thêm <span class="muted" id="descriptionHintText">(tùy chọn)</span></label>
       <textarea id="newAssignmentDescription" rows="3" placeholder="Yêu cầu chi tiết cho học sinh..."></textarea>
       <label>Hạn nộp (tùy chọn)</label>
       <input type="date" id="newAssignmentDueDate">
-      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, hoặc danh sách từ vựng)</label>
+      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, danh sách từ vựng, hoặc ảnh Cue Card)</label>
       <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
       <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
       <button class="btn-primary" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
@@ -464,6 +483,13 @@ function loadClasses() {
     });
 }
 
+function audienceLevelLabel(level) {
+  if (level === 'middle') return 'Cấp 2';
+  if (level === 'high') return 'Cấp 3';
+  if (level === 'ielts') return 'IELTS';
+  return 'Tiểu học';
+}
+
 function renderClasses() {
   var tbody = document.getElementById('classesTableBody');
   var html = '';
@@ -472,6 +498,7 @@ function renderClasses() {
     html += '<tr>';
     html += '<td>' + escapeHtml(c.name) + '</td>';
     html += '<td>' + escapeHtml(c.curriculum || '-') + '</td>';
+    html += '<td><span class="pill">' + audienceLevelLabel(c.audience_level) + '</span></td>';
     html += '<td id="classCount_' + c.id + '">...</td>';
     html += '<td><button class="btn-danger btn-sm" onclick="deleteClass(\'' + c.id + '\')">Xóa</button></td>';
     html += '</tr>';
@@ -503,8 +530,9 @@ function renderClassDropdown() {
 function addClass() {
   var name = document.getElementById('newClassName').value.trim();
   var curriculum = document.getElementById('newClassCurriculum').value.trim();
+  var audienceLevel = document.getElementById('newClassAudience').value;
   if (!name) { showToast('Nhập tên lớp'); return; }
-  supabaseClient.from('sp_classes').insert({ name: name, curriculum: curriculum })
+  supabaseClient.from('sp_classes').insert({ name: name, curriculum: curriculum, audience_level: audienceLevel })
     .then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       document.getElementById('newClassName').value = '';
@@ -907,26 +935,71 @@ function showToast(msg) {
 // =====================================================
 var selectedAssignmentImage = null;
 var currentAssignmentsList = [];
+var assignmentClassesList = [];
 
 function loadClassesForAssignments() {
   supabaseClient.from('sp_classes').select('*').order('created_at', { ascending: true })
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải lớp: ' + res.error.message); return; }
+      assignmentClassesList = res.data || [];
       var sel = document.getElementById('assignmentClassSelect');
       var html = '';
-      for (var i = 0; i < (res.data || []).length; i++) {
-        html += '<option value="' + res.data[i].id + '">' + escapeHtml(res.data[i].name) + '</option>';
+      for (var i = 0; i < assignmentClassesList.length; i++) {
+        html += '<option value="' + assignmentClassesList[i].id + '">' + escapeHtml(assignmentClassesList[i].name) + '</option>';
       }
       sel.innerHTML = html;
-      if (res.data && res.data.length > 0) loadAssignmentsAdmin();
+      if (assignmentClassesList.length > 0) onAssignmentClassChange();
     });
+}
+
+function getSelectedAssignmentClassAudience() {
+  var classId = document.getElementById('assignmentClassSelect').value;
+  for (var i = 0; i < assignmentClassesList.length; i++) {
+    if (assignmentClassesList[i].id === classId) return assignmentClassesList[i].audience_level || 'elementary';
+  }
+  return 'elementary';
+}
+
+function onAssignmentClassChange() {
+  var audience = getSelectedAssignmentClassAudience();
+  var isIelts = audience === 'ielts';
+  var generalGroup = document.getElementById('optgroupGeneral');
+  var ieltsGroup = document.getElementById('optgroupIelts');
+  var typeSelect = document.getElementById('newAssignmentType');
+  var note = document.getElementById('assignmentClassAudienceNote');
+
+  generalGroup.style.display = isIelts ? 'none' : '';
+  ieltsGroup.style.display = isIelts ? '' : 'none';
+  typeSelect.value = isIelts ? 'ielts_part2' : 'presentation';
+
+  note.textContent = isIelts
+    ? 'Lớp IELTS → chỉ hiện các loại bài IELTS Part 1/2/3.'
+    : 'Lớp ' + audienceLevelLabel(audience) + ' → chỉ hiện 3 loại bài thường (Thuyết trình/Từ vựng/Luyện đọc).';
+
+  onAssignmentTypeChange();
+  loadAssignmentsAdmin();
 }
 
 function onAssignmentTypeChange() {
   var type = document.getElementById('newAssignmentType').value;
-  var block = document.getElementById('readingTextBlock');
-  if (type === 'reading') block.classList.remove('hidden');
-  else block.classList.add('hidden');
+  var readingBlock = document.getElementById('readingTextBlock');
+  var questionsBlock = document.getElementById('questionsTextBlock');
+  var topicHint = document.getElementById('topicHintText');
+  var descHint = document.getElementById('descriptionHintText');
+
+  readingBlock.classList.toggle('hidden', type !== 'reading');
+  questionsBlock.classList.toggle('hidden', type !== 'ielts_part1' && type !== 'ielts_part3');
+
+  if (type === 'ielts_part2') {
+    topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
+    descHint.textContent = '(gợi ý/bullet points như thẻ Cue Card thật, VD: You should say: where you went / who you went with / what you did...)';
+  } else if (type === 'ielts_part1' || type === 'ielts_part3') {
+    topicHint.textContent = '(VD: Hobbies and Free Time)';
+    descHint.textContent = '(tùy chọn, ghi chú thêm bối cảnh nếu cần)';
+  } else {
+    topicHint.textContent = '(VD: So sánh 2 bức tranh Unit 2 - Playtime)';
+    descHint.textContent = '(tùy chọn)';
+  }
 }
 
 function onAssignmentImageSelected() {
@@ -1005,9 +1078,11 @@ function addAssignment() {
   var dueDate = document.getElementById('newAssignmentDueDate').value;
   var type = document.getElementById('newAssignmentType').value;
   var readingText = document.getElementById('newAssignmentReadingText').value.trim();
+  var questionsText = document.getElementById('newAssignmentQuestionsText').value.trim();
   if (!classId) { showToast('Chưa chọn lớp'); return; }
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
   if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
+  if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
 
   function insertAssignment(imageUrl) {
     supabaseClient.from('sp_assignments').insert({
@@ -1017,7 +1092,8 @@ function addAssignment() {
       due_date: dueDate || null,
       reference_image_url: imageUrl || null,
       type: type,
-      reading_text: type === 'reading' ? readingText : null
+      reading_text: type === 'reading' ? readingText : null,
+      questions_text: (type === 'ielts_part1' || type === 'ielts_part3') ? questionsText : null
     }).then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       showToast('Đã tạo bài giao');
@@ -1025,6 +1101,7 @@ function addAssignment() {
       document.getElementById('newAssignmentDescription').value = '';
       document.getElementById('newAssignmentDueDate').value = '';
       document.getElementById('newAssignmentReadingText').value = '';
+      document.getElementById('newAssignmentQuestionsText').value = '';
       setAssignmentImageFile(null);
       document.getElementById('assignmentImageInput').value = '';
       loadAssignmentsAdmin();
@@ -1056,6 +1133,15 @@ function loadAssignmentsAdmin() {
     });
 }
 
+function assignmentTypeLabel(type) {
+  if (type === 'vocabulary') return 'Đọc từ vựng';
+  if (type === 'reading') return 'Luyện đọc';
+  if (type === 'ielts_part1') return 'IELTS Part 1';
+  if (type === 'ielts_part2') return 'IELTS Part 2';
+  if (type === 'ielts_part3') return 'IELTS Part 3';
+  return 'Thuyết trình';
+}
+
 function renderAssignmentsList() {
   var box = document.getElementById('assignmentsListBox');
   if (currentAssignmentsList.length === 0) {
@@ -1069,11 +1155,11 @@ function renderAssignmentsList() {
     html += '<div class="row" style="justify-content:space-between;align-items:flex-start;">';
     html += '<div>';
     html += '<b>' + escapeHtml(a.topic) + '</b>';
-    var typeLabel = a.type === 'vocabulary' ? 'Đọc từ vựng' : (a.type === 'reading' ? 'Luyện đọc' : 'Thuyết trình');
-    html += ' <span class="pill">' + typeLabel + '</span>';
+    html += ' <span class="pill">' + assignmentTypeLabel(a.type) + '</span>';
     if (a.due_date) html += ' <span class="pill">Hạn: ' + escapeHtml(a.due_date) + '</span>';
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;">Bài đọc mẫu: "' + escapeHtml(a.reading_text) + '"</div>';
+    if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
     html += '</div>';
     html += '<button class="btn-danger btn-sm" onclick="deleteAssignment(\'' + a.id + '\')">Xóa</button>';
     html += '</div>';
