@@ -157,8 +157,53 @@
   <div class="card">
     <h2>Nộp bài mới</h2>
 
-    <div id="recordBlock">
-      <label>Ghi âm bài nói</label>
+    <div class="hidden" id="assignmentBlock">
+      <label>📋 Hoàn thành nội dung các bài sau</label>
+      <select id="assignmentSelect" onchange="onAssignmentChange()">
+        <option value="">-- Không theo bài giao, tự chọn luyện tập --</option>
+      </select>
+    </div>
+
+    <div id="freePracticeBlock" style="margin-top:16px;">
+      <label id="freePracticeLabel">Con đang luyện gì? Hãy chọn chủ đề luyện tập</label>
+      <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
+        <optgroup label="Luyện tập" id="freeOptgroupGeneral">
+          <option value="presentation">Tự chọn chủ đề để nói</option>
+          <option value="vocabulary">Đọc từ vựng</option>
+          <option value="reading">Luyện đọc theo bài</option>
+        </optgroup>
+        <optgroup label="IELTS" id="freeOptgroupIelts">
+          <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
+          <option value="ielts_part2">IELTS Part 2 — Cue Card</option>
+          <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
+        </optgroup>
+      </select>
+
+      <div id="freeImageBlock" style="margin-top:12px;">
+        <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, ảnh danh sách từ vựng, hoặc ảnh Cue Card)</label>
+        <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
+        <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
+      </div>
+
+      <div id="freeReadingTextBlock" class="hidden" style="margin-top:12px;">
+        <label id="freeReadingTextLabel">Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)</label>
+        <textarea id="freeReadingTextInput" rows="4" placeholder="Dán đoạn văn con đang đọc..."></textarea>
+      </div>
+    </div>
+    <div id="assignmentDescriptionPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;">
+      <p id="assignmentDescriptionPreviewContent" style="margin:0;line-height:1.6;white-space:pre-wrap;"></p>
+    </div>
+    <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
+      <p class="muted">Ảnh đề bài của bài giao này:</p>
+      <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
+    </div>
+    <div id="readingTextPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
+      <p class="muted" id="readingTextPreviewLabel" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
+      <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;"></p>
+    </div>
+
+    <div id="recordBlock" style="margin-top:20px;padding-top:16px;border-top:1px solid #232b45;">
+      <label>🎙️ Đọc/nói đúng nội dung ở trên, rồi ghi âm tại đây</label>
       <div class="row" style="gap:10px;">
         <button class="btn-primary" id="recordBtn" onclick="toggleRecording()">🎙️ Bắt đầu ghi âm</button>
         <span id="recordTimer" class="muted hidden">00:00</span>
@@ -173,41 +218,6 @@
       <label>Hoặc chọn file ghi âm có sẵn trong máy</label>
       <label class="file-input-label" id="fileLabel" for="audioFileInput">🎵 Bấm để chọn file ghi âm</label>
       <input type="file" id="audioFileInput" accept="audio/*" onchange="onFileSelected()">
-    </div>
-
-    <div class="hidden" id="assignmentBlock">
-      <label>Bài giao</label>
-      <select id="assignmentSelect" onchange="onAssignmentChange()">
-        <option value="">Bài tự do (không theo bài giao)</option>
-      </select>
-    </div>
-
-    <div id="freePracticeBlock" style="margin-top:16px;">
-      <label>Con đang luyện gì?</label>
-      <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
-        <option value="presentation">Nói tự do / thuyết trình</option>
-        <option value="vocabulary">Đọc từ vựng</option>
-        <option value="reading">Luyện đọc theo bài</option>
-      </select>
-
-      <div id="freeImageBlock" style="margin-top:12px;">
-        <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, hoặc ảnh danh sách từ vựng)</label>
-        <label class="file-input-label" id="refImageLabel" for="refImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
-        <input type="file" id="refImageInput" accept="image/*" onchange="onRefImageSelected()">
-      </div>
-
-      <div id="freeReadingTextBlock" class="hidden" style="margin-top:12px;">
-        <label>Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)</label>
-        <textarea id="freeReadingTextInput" rows="4" placeholder="Dán đoạn văn con đang đọc..."></textarea>
-      </div>
-    </div>
-    <div id="assignmentImagePreview" class="hidden" style="margin-top:10px;">
-      <p class="muted">Ảnh đề bài của bài giao này:</p>
-      <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
-    </div>
-    <div id="readingTextPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
-      <p class="muted" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
-      <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;"></p>
     </div>
 
     <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
@@ -282,8 +292,9 @@ function initApp() {
   var savedStudentId = localStorage.getItem('sp_student_id');
   var savedStudentName = localStorage.getItem('sp_student_name');
   var savedClassId = localStorage.getItem('sp_student_class_id');
+  var savedAudienceLevel = localStorage.getItem('sp_student_audience_level') || 'elementary';
   if (savedStudentId) {
-    currentStudent = { id: savedStudentId, name: savedStudentName, class_id: savedClassId };
+    currentStudent = { id: savedStudentId, name: savedStudentName, class_id: savedClassId, audience_level: savedAudienceLevel };
     showMainApp();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -319,11 +330,22 @@ function doLogin() {
       if (!res.data) { showToast('Không tìm thấy tài khoản'); return; }
       if (res.data.password !== password) { showToast('Sai mật khẩu'); return; }
 
-      currentStudent = { id: res.data.id, name: res.data.name, class_id: res.data.class_id };
+      currentStudent = { id: res.data.id, name: res.data.name, class_id: res.data.class_id, audience_level: 'elementary' };
       localStorage.setItem('sp_student_id', currentStudent.id);
       localStorage.setItem('sp_student_name', currentStudent.name);
       localStorage.setItem('sp_student_class_id', currentStudent.class_id || '');
-      showMainApp();
+
+      if (currentStudent.class_id) {
+        supabaseClient.from('sp_classes').select('audience_level').eq('id', currentStudent.class_id).maybeSingle()
+          .then(function(cRes) {
+            currentStudent.audience_level = (cRes.data && cRes.data.audience_level) || 'elementary';
+            localStorage.setItem('sp_student_audience_level', currentStudent.audience_level);
+            showMainApp();
+          });
+      } else {
+        localStorage.setItem('sp_student_audience_level', 'elementary');
+        showMainApp();
+      }
     });
 }
 
@@ -331,6 +353,7 @@ function doLogout() {
   localStorage.removeItem('sp_student_id');
   localStorage.removeItem('sp_student_name');
   localStorage.removeItem('sp_student_class_id');
+  localStorage.removeItem('sp_student_audience_level');
   currentStudent = null;
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -340,8 +363,8 @@ function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   document.getElementById('welcomeName').textContent = '🎤 Chào ' + currentStudent.name;
+  loadSubmissions(); // tải trước để biết bài giao nào đã nộp rồi
   loadAssignments();
-  loadSubmissions();
 }
 
 function openChangePwModal() { document.getElementById('changePwModal').classList.remove('hidden'); }
@@ -363,6 +386,8 @@ function saveNewPassword() {
 // =====================================================
 // ASSIGNMENTS
 // =====================================================
+var submittedAssignmentIds = {};
+
 function loadAssignments() {
   if (!currentStudent.class_id) return;
   supabaseClient.from('sp_assignments').select('*')
@@ -371,31 +396,41 @@ function loadAssignments() {
     .then(function(res) {
       if (res.error) return;
       currentAssignments = res.data || [];
-      var sel = document.getElementById('assignmentSelect');
-      var html = '<option value="">Bài tự do (không theo bài giao)</option>';
-      for (var i = 0; i < currentAssignments.length; i++) {
-        var a = currentAssignments[i];
-        html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + '</option>';
-      }
-      sel.innerHTML = html;
-      var block = document.getElementById('assignmentBlock');
-      if (currentAssignments.length > 0) block.classList.remove('hidden');
-      else block.classList.add('hidden');
-      onAssignmentChange();
+      renderAssignmentDropdown();
     });
+}
+
+function renderAssignmentDropdown() {
+  var sel = document.getElementById('assignmentSelect');
+  var currentValue = sel.value;
+  var html = '<option value="">-- Không theo bài giao, tự chọn luyện tập --</option>';
+  for (var i = 0; i < currentAssignments.length; i++) {
+    var a = currentAssignments[i];
+    var doneMark = submittedAssignmentIds[a.id] ? ' ✅ Đã nộp' : '';
+    html += '<option value="' + a.id + '">' + escapeHtml(a.topic) + doneMark + '</option>';
+  }
+  sel.innerHTML = html;
+  if (currentValue) sel.value = currentValue;
+  var block = document.getElementById('assignmentBlock');
+  if (currentAssignments.length > 0) block.classList.remove('hidden');
+  else block.classList.add('hidden');
+  onAssignmentChange();
 }
 
 function onAssignmentChange() {
   var assignmentId = document.getElementById('assignmentSelect').value;
   var freePracticeBlock = document.getElementById('freePracticeBlock');
+  var descBlock = document.getElementById('assignmentDescriptionPreview');
   var previewBlock = document.getElementById('assignmentImagePreview');
   var readingBlock = document.getElementById('readingTextPreview');
 
   if (!assignmentId) {
     // Bài tự do -> cho học sinh chọn loại luyện tập
     freePracticeBlock.classList.remove('hidden');
+    descBlock.classList.add('hidden');
     previewBlock.classList.add('hidden');
     readingBlock.classList.add('hidden');
+    applyAudienceToFreePractice();
     onFreePracticeTypeChange();
     return;
   }
@@ -408,6 +443,13 @@ function onAssignmentChange() {
     if (currentAssignments[i].id === assignmentId) { chosen = currentAssignments[i]; break; }
   }
 
+  if (chosen && chosen.description) {
+    document.getElementById('assignmentDescriptionPreviewContent').textContent = chosen.description;
+    descBlock.classList.remove('hidden');
+  } else {
+    descBlock.classList.add('hidden');
+  }
+
   if (chosen && chosen.reference_image_url) {
     document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
     previewBlock.classList.remove('hidden');
@@ -416,20 +458,50 @@ function onAssignmentChange() {
   }
 
   if (chosen && chosen.type === 'reading' && chosen.reading_text) {
+    document.getElementById('readingTextPreviewLabel').textContent = 'Đọc đúng đoạn này:';
     document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
+    readingBlock.classList.remove('hidden');
+  } else if (chosen && (chosen.type === 'ielts_part1' || chosen.type === 'ielts_part3') && chosen.questions_text) {
+    document.getElementById('readingTextPreviewLabel').textContent = 'Trả lời lần lượt các câu hỏi sau (ghi âm liên tục):';
+    document.getElementById('readingTextPreviewContent').textContent = chosen.questions_text;
     readingBlock.classList.remove('hidden');
   } else {
     readingBlock.classList.add('hidden');
   }
 }
 
+function applyAudienceToFreePractice() {
+  var isIelts = currentStudent.audience_level === 'ielts';
+  var generalGroup = document.getElementById('freeOptgroupGeneral');
+  var ieltsGroup = document.getElementById('freeOptgroupIelts');
+  var sel = document.getElementById('freePracticeType');
+  var label = document.getElementById('freePracticeLabel');
+
+  generalGroup.style.display = isIelts ? 'none' : '';
+  ieltsGroup.style.display = isIelts ? '' : 'none';
+  sel.value = isIelts ? 'ielts_part2' : 'presentation';
+  label.textContent = isIelts ? 'Bạn đang luyện phần nào?' : 'Con đang luyện gì?';
+}
+
 function onFreePracticeTypeChange() {
   var type = document.getElementById('freePracticeType').value;
   var imageBlock = document.getElementById('freeImageBlock');
   var readingTextBlock = document.getElementById('freeReadingTextBlock');
-  if (type === 'reading') {
+  var readingLabel = document.getElementById('freeReadingTextLabel');
+  var readingInput = document.getElementById('freeReadingTextInput');
+
+  var needsTextInput = (type === 'reading' || type === 'ielts_part1' || type === 'ielts_part3');
+
+  if (needsTextInput) {
     imageBlock.classList.add('hidden');
     readingTextBlock.classList.remove('hidden');
+    if (type === 'reading') {
+      readingLabel.textContent = 'Dán nội dung bài đang đọc (tùy chọn — có thì chấm chính xác hơn)';
+      readingInput.placeholder = 'Dán đoạn văn con đang đọc...';
+    } else {
+      readingLabel.textContent = 'Câu hỏi đang trả lời (tùy chọn — có thì chấm chính xác hơn)';
+      readingInput.placeholder = 'VD: What do you usually do in your free time?';
+    }
   } else {
     imageBlock.classList.remove('hidden');
     readingTextBlock.classList.add('hidden');
@@ -611,7 +683,8 @@ function submitVideo() {
   if (!selectedFile) { showToast('Chưa có bản ghi âm nào'); return; }
   var assignmentId = document.getElementById('assignmentSelect').value || null;
   var practiceType = assignmentId ? null : document.getElementById('freePracticeType').value;
-  var freeReadingText = (!assignmentId && practiceType === 'reading')
+  var needsTextCapture = practiceType === 'reading' || practiceType === 'ielts_part1' || practiceType === 'ielts_part3';
+  var freeReadingText = (!assignmentId && needsTextCapture)
     ? document.getElementById('freeReadingTextInput').value.trim()
     : null;
   var statusEl = document.getElementById('uploadStatus');
@@ -646,7 +719,7 @@ function submitVideo() {
   }
 
   function uploadRefImageThen(fileUrl) {
-    if (!selectedRefImage || practiceType === 'reading') { finishInsert(fileUrl, null); return; }
+    if (!selectedRefImage || needsTextCapture) { finishInsert(fileUrl, null); return; }
     var imgExt = selectedRefImage.name.split('.').pop();
     var imgPath = currentStudent.id + '/' + Date.now() + '_ref.' + imgExt;
     supabaseClient.storage.from('assignment-images').upload(imgPath, selectedRefImage)
@@ -697,13 +770,19 @@ function resetUploadForm() {
 // SUBMISSIONS LIST
 // =====================================================
 function loadSubmissions() {
-  supabaseClient.from('sp_submissions').select('*, sp_scores(*)').eq('student_id', currentStudent.id)
+  supabaseClient.from('sp_submissions').select('*, sp_scores(*), sp_assignments(type)').eq('student_id', currentStudent.id)
     .order('submitted_at', { ascending: false })
     .then(function(res) {
       if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
       var list = res.data || [];
       renderSubmissions(list);
       scheduleAutoRefresh(list);
+
+      submittedAssignmentIds = {};
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].assignment_id) submittedAssignmentIds[list[i].assignment_id] = true;
+      }
+      if (currentAssignments.length > 0) renderAssignmentDropdown();
     });
 }
 
@@ -738,6 +817,11 @@ function renderSubmissions(list) {
     }
     var dateStr = formatDate(sub.submitted_at);
 
+    var effectiveType = 'presentation';
+    if (sub.sp_assignments && sub.sp_assignments.type) effectiveType = sub.sp_assignments.type;
+    else if (sub.practice_type) effectiveType = sub.practice_type;
+    var isIeltsSub = effectiveType.indexOf('ielts') === 0;
+
     html += '<div class="sub-item" onclick="toggleDetail(' + i + ')">';
     html += '<div class="sub-item-header">';
     html += '<div><b>' + dateStr + '</b></div>';
@@ -745,7 +829,9 @@ function renderSubmissions(list) {
     html += '</div>';
 
     if (sub.status === 'graded' && score) {
-      html += '<div style="margin-top:8px;" class="score-big">' + (score.overall_score !== null ? score.overall_score : '-') + '/10</div>';
+      var scoreLabel = score.overall_score !== null ? score.overall_score : '-';
+      scoreLabel = isIeltsSub ? ('Band ' + scoreLabel) : (scoreLabel + '/10');
+      html += '<div style="margin-top:8px;" class="score-big">' + scoreLabel + '</div>';
       html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(addFeedbackIcons(score.detailed_feedback || '')) + '</div>';
     } else if (sub.status === 'invalid') {
       html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml((score && score.invalid_reason) || 'Bài chưa đạt yêu cầu, vui lòng nộp lại.') + '</div>';
@@ -816,7 +902,10 @@ function addFeedbackIcons(text) {
     ['Phát âm:', '🗣️ Phát âm:'],
     ['Tự tin:', '💪 Tự tin:'],
     ['Đọc đúng bài:', '📖 Đọc đúng bài:'],
+    ['Trôi chảy & Mạch lạc:', '🌊 Trôi chảy & Mạch lạc:'],
     ['Trôi chảy:', '🌊 Trôi chảy:'],
+    ['Vốn từ vựng:', '📚 Vốn từ vựng:'],
+    ['Ngữ pháp (đa dạng & chính xác):', '✏️ Ngữ pháp (đa dạng & chính xác):'],
     ['Lời khen:', '🌟 Lời khen:']
   ];
   var result = text;
