@@ -746,7 +746,7 @@ function renderSubmissions(list) {
 
     if (sub.status === 'graded' && score) {
       html += '<div style="margin-top:8px;" class="score-big">' + (score.overall_score !== null ? score.overall_score : '-') + '/10</div>';
-      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(score.detailed_feedback || '') + '</div>';
+      html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml(addFeedbackIcons(score.detailed_feedback || '')) + '</div>';
     } else if (sub.status === 'invalid') {
       html += '<div id="detail_' + i + '" class="detail-box hidden">' + escapeHtml((score && score.invalid_reason) || 'Bài chưa đạt yêu cầu, vui lòng nộp lại.') + '</div>';
     } else if (sub.status === 'processing') {
@@ -807,6 +807,29 @@ function formatDate(iso) {
 // =====================================================
 // UTIL
 // =====================================================
+function addFeedbackIcons(text) {
+  if (!text) return text;
+  var iconMap = [
+    ['Nội dung:', '📝 Nội dung:'],
+    ['Từ vựng:', '📚 Từ vựng:'],
+    ['Ngữ pháp:', '✏️ Ngữ pháp:'],
+    ['Phát âm:', '🗣️ Phát âm:'],
+    ['Tự tin:', '💪 Tự tin:'],
+    ['Đọc đúng bài:', '📖 Đọc đúng bài:'],
+    ['Trôi chảy:', '🌊 Trôi chảy:'],
+    ['Lời khen:', '🌟 Lời khen:']
+  ];
+  var result = text;
+  for (var i = 0; i < iconMap.length; i++) {
+    var label = iconMap[i][0];
+    var replacement = iconMap[i][1];
+    var escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp('(^|\\n)' + escapedLabel, 'g');
+    result = result.replace(regex, function(match, p1) { return p1 + replacement; });
+  }
+  return result;
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
