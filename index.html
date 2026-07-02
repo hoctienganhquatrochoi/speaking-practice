@@ -33,6 +33,9 @@
     border-radius: 10px;
     margin: 0 0 14px 0;
   }
+  .banner-title-blue {
+    background: linear-gradient(135deg, #4c6fff, #7b5cff);
+  }
   p.sub { color: #8891a8; margin: 0 0 20px 0; font-size: 14px; }
   input[type=text], input[type=password], select {
     background: #0f1420;
@@ -173,7 +176,7 @@
     </div>
 
     <div id="freePracticeBlock" style="margin-top:16px;">
-      <p class="banner-title" id="freePracticeLabel">Học sinh tự luyện</p>
+      <p class="banner-title banner-title-blue" id="freePracticeLabel">Học sinh tự luyện</p>
       <select id="freePracticeType" onchange="onFreePracticeTypeChange()">
         <optgroup label="" id="freeOptgroupGeneral">
           <option value="presentation">Thuyết trình theo tranh</option>
@@ -186,7 +189,7 @@
           <option value="ielts_part3">IELTS Part 3 — Thảo luận sâu</option>
         </optgroup>
       </select>
-      <p class="muted hidden" id="backToAssignmentLink" style="margin-top:6px;"><a href="#" onclick="toggleFreeMode(false);return false;" style="color:#9db4ff;">« Quay lại làm theo bài giao</a></p>
+      <button class="btn-secondary btn-sm hidden" id="backToAssignmentLink" style="margin-top:10px;" onclick="toggleFreeMode(false)">« Quay lại làm theo bài giao</button>
 
       <div id="freeImageBlock" style="margin-top:12px;">
         <label>Đính kèm ảnh (tùy chọn — VD ảnh cần mô tả/so sánh, ảnh danh sách từ vựng, hoặc ảnh Cue Card)</label>
