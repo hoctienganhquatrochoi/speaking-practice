@@ -345,13 +345,10 @@
 
         <div class="card" style="margin-top:14px;background:#0f1420;">
           <h2>✍️ Dán câu hỏi trắc nghiệm dạng text (tùy chọn)</h2>
-          <p class="muted">Dán khối câu hỏi đã có sẵn đáp án (không cần ngồi nhập từng ô). Mỗi câu cách nhau 1 dòng trống, đáp án ghi ở cuối mỗi câu dạng "Đáp án: B" (hoặc "Answer: B"). Ví dụ:</p>
-          <p class="muted" style="white-space:pre-wrap;background:#171d2e;border-radius:8px;padding:10px;margin-top:6px;">1. What did Ava watch in the morning?
-A. Birds
-B. Ants
-C. Butterflies
-D. Squirrels
-Đáp án: B</p>
+          <p class="muted">Dán khối câu hỏi đã có sẵn đáp án (không cần ngồi nhập từng ô). Hỗ trợ cả 3 dạng: trắc nghiệm A/B/C/D, Đúng/Sai, và tự luận — kể cả khi đáp án/giải thích nằm ngay trên cùng dòng với câu hỏi (không cần xuống dòng riêng cho từng đáp án). Các dòng tiêu đề mục như "A. Multiple Choice", "B. True or False" sẽ tự động được bỏ qua. Ví dụ:</p>
+          <p class="muted" style="white-space:pre-wrap;background:#171d2e;border-radius:8px;padding:10px;margin-top:6px;">1. What did Ava watch in the morning? a. Birds b. Ants c. Butterflies d. Squirrels Đáp án: b. Ants Giải thích: ...
+2. Ava watched ants in the evening. ( ) Đáp án: False
+3. What did Ava make for the ants? ........... Đáp án: Ava made a tiny ant city using leaves and sticks.</p>
           <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán khối câu hỏi trắc nghiệm vào đây..."></textarea>
           <div class="row" style="margin-top:10px;">
             <button class="btn-secondary btn-sm" onclick="parsePastedQuestions(false)">✂️ Tách thành câu hỏi</button>
@@ -1538,86 +1535,144 @@ function parsePastedQuestions(appendMode) {
 
 function parseMultipleChoiceText(raw) {
   var text = raw.replace(/\r\n/g, '\n');
-  // tach thanh cac khoi theo dong trong, hoac theo dong bat dau bang so thu tu "1." "2)" ...
-  var rawBlocks = text.split(/\n\s*\n/);
-  var blocks = [];
-  for (var b = 0; b < rawBlocks.length; b++) {
-    var blk = rawBlocks[b].trim();
-    if (!blk) continue;
-    // neu 1 khoi chua nhieu cau hoi gop lai (khong co dong trong giua), tach tiep theo pattern so thu tu dau dong
-    var subParts = blk.split(/\n(?=\s*\d{1,2}[\.\)]\s)/);
-    for (var sp = 0; sp < subParts.length; sp++) {
-      if (subParts[sp].trim()) blocks.push(subParts[sp].trim());
-    }
-  }
 
+  // 1) Bo cac dong tieu de muc / huong dan (khong phai cau hoi that)
+  //    VD: "Questions", "A. Multiple Choice", "B. True or False", "C. Short Answer", "Các bạn đọc bài..."
+  var lines = text.split('\n');
+  var filtered = [];
+  for (var li = 0; li < lines.length; li++) {
+    var t = lines[li].trim();
+    if (t === '') { filtered.push(lines[li]); continue; }
+    if (/^questions?$/i.test(t)) continue;
+    if (/^[A-Za-z][\.\):]\s*(multiple\s*choice|true\s*(\/|or)\s*false|short\s*answer|essay|writing|fill[\s\-]*in)/i.test(t)) continue;
+    if (/^(các\s*bạn|hãy\s*(chọn|đọc)|read\s+the|choose\s+the)/i.test(t)) continue;
+    filtered.push(lines[li]);
+  }
+  text = filtered.join('\n');
+
+  // 2) Chen dau moc truoc moi so thu tu dau cau hoi (VD "1.", "2)"), du la sau dau xuong dong
+  //    hay chi la sau dau cham/hoi/! cua cau truoc (truong hop dan nguyen 1 doan van khong xuong dong)
+  //    -> giup tach dung tung cau ke ca khi dinh dang dan vao khong ro rang
+  var MARK = '\u0001QSTART\u0001';
+  var withMarks = text.replace(/(^|[\.\?\!]\s+|\n)(\d{1,2}[\.\)]\s)/g, function(m, pre, num) {
+    return pre + MARK + num;
+  });
+
+  var rawChunks = withMarks.split(MARK);
   var results = [];
-  var optionLineRe = /^\s*([A-Da-d])[\.\)]\s*(.+)$/;
-  var answerLineRe = /^\s*(?:Đáp\s*án|Dap\s*an|Answer|Correct\s*answer)\s*[:\-]?\s*([A-Da-d])\b.*$/i;
+  for (var c = 0; c < rawChunks.length; c++) {
+    var chunkText = rawChunks[c].trim();
+    if (!chunkText || !/^\d{1,2}[\.\)]\s/.test(chunkText)) continue; // bo phan mo dau khong phai cau hoi
+    var parsed = parseOneQuestionChunk(chunkText);
+    if (parsed) results.push(parsed);
+  }
+  return results;
+}
 
-  for (var i = 0; i < blocks.length; i++) {
-    var lines = blocks[i].split('\n');
-    var questionLines = [];
-    var options = { a: '', b: '', c: '', d: '' };
-    var correct = null;
-    var seenOption = false;
+// Phan tich 1 khoi van ban dai dien cho 1 cau hoi (co the la trac nghiem A/B/C/D,
+// dung/sai, hoac tu luan), bat ke dap an/giai thich nam tren dong rieng hay dinh lien trong cung 1 dong.
+function parseOneQuestionChunk(chunkRaw) {
+  var chunk = chunkRaw.replace(/^\s*\d{1,2}[\.\)]\s*/, '');
+  chunk = chunk.replace(/\s+/g, ' ').trim(); // gop ve 1 dong cho de xu ly bang regex
 
-    for (var l = 0; l < lines.length; l++) {
-      var line = lines[l].trim();
-      if (!line) continue;
-
-      var ansMatch = line.match(answerLineRe);
-      if (ansMatch) {
-        correct = ansMatch[1].toLowerCase();
-        continue;
-      }
-
-      var optMatch = line.match(optionLineRe);
-      if (optMatch) {
-        seenOption = true;
-        var letter = optMatch[1].toLowerCase();
-        var optText = optMatch[2].trim();
-        // neu dap an duoc danh dau bang * hoac **bold** hoac [correct] o cuoi dong
-        var markedCorrect = false;
-        if (/(\*\*|\*|\[đúng\]|\[dung\]|\[correct\])\s*$/i.test(optText)) {
-          markedCorrect = true;
-          optText = optText.replace(/(\*\*|\*|\[đúng\]|\[dung\]|\[correct\])\s*$/i, '').trim();
-        }
-        options[letter] = sanitizeOptionText(optText);
-        if (markedCorrect) correct = letter;
-        continue;
-      }
-
-      if (!seenOption) {
-        // dong cau hoi, bo so thu tu dau dong kieu "1." "Câu 1:" "Question 2)"
-        questionLines.push(sanitizeQuestionText(line));
-      }
-    }
-
-    var questionText = questionLines.join(' ').trim();
-    var hasAnyOption = options.a || options.b || options.c || options.d;
-    if (!questionText || !hasAnyOption) continue; // bo qua khoi khong hop le
-
-    results.push({
-      question_type: 'multiple_choice',
-      question_text: questionText,
-      option_a: options.a || '',
-      option_b: options.b || '',
-      option_c: options.c || '',
-      option_d: options.d || '',
-      correct_option: correct || 'a',
-      correct_answer_text: '',
-      explanation: ''
-    });
+  var explanation = '';
+  var expMatch = chunk.match(/(?:Giải\s*thích|Explanation)\s*[:\-]?\s*(.+)$/i);
+  if (expMatch) {
+    explanation = expMatch[1].trim();
+    chunk = chunk.slice(0, expMatch.index).trim();
   }
 
-  return results;
+  var correctLetter = null;
+  var correctBool = null;
+  var answerFullText = '';
+
+  var ansLetterMatch = chunk.match(/(?:Đáp\s*án|Dap\s*an|Answer)\s*[:\-]?\s*([A-Da-d])\b/i);
+  var ansTFMatch = chunk.match(/(?:Đáp\s*án|Dap\s*an|Answer)\s*[:\-]?\s*(True|False|Đúng|Sai)\b/i);
+
+  if (ansLetterMatch) {
+    correctLetter = ansLetterMatch[1].toLowerCase();
+    chunk = chunk.slice(0, ansLetterMatch.index).trim();
+  } else if (ansTFMatch) {
+    var tfWord = ansTFMatch[1].toLowerCase();
+    correctBool = (tfWord === 'true' || tfWord === 'đúng');
+    chunk = chunk.slice(0, ansTFMatch.index).trim();
+  } else {
+    var ansGenericMatch = chunk.match(/(?:Đáp\s*án|Dap\s*an|Answer)\s*[:\-]?\s*(.+)$/i);
+    if (ansGenericMatch) {
+      answerFullText = ansGenericMatch[1].trim();
+      chunk = chunk.slice(0, ansGenericMatch.index).trim();
+    }
+  }
+
+  // tim vi tri bat dau phan dap an trac nghiem "a. ... b. ... c. ... d. ..." (neu co, co the nam
+  // ngay tren cung 1 dong voi cau hoi)
+  var optStartMatch = chunk.match(/\ba[\.\)]\s+/i);
+  var questionText, optionsBlob;
+  if (optStartMatch) {
+    questionText = chunk.slice(0, optStartMatch.index).trim();
+    optionsBlob = chunk.slice(optStartMatch.index).trim();
+  } else {
+    questionText = chunk.trim();
+    optionsBlob = '';
+  }
+
+  questionText = questionText
+    .replace(/\(\s*\)\s*$/, '')      // bo o trong "( )" cuoi cau hoi dung/sai
+    .replace(/\.{3,}\s*$/, '')       // bo cham cham cham (cho tu luan)
+    .replace(/_{3,}\s*$/, '')        // bo gach chan (cho tu luan)
+    .replace(/[:\-]\s*$/, '')
+    .trim();
+  if (!questionText) return null;
+
+  var options = { a: '', b: '', c: '', d: '' };
+  if (optionsBlob) {
+    var parts = optionsBlob.split(/\s(?=[a-d][\.\)]\s)/i);
+    for (var p = 0; p < parts.length; p++) {
+      var pm = parts[p].match(/^([a-d])[\.\)]\s*(.+)$/i);
+      if (pm) options[pm[1].toLowerCase()] = sanitizeOptionText(pm[2].trim());
+    }
+  }
+  var hasOptions = options.a || options.b || options.c || options.d;
+
+  if (hasOptions) {
+    return {
+      question_type: 'multiple_choice',
+      question_text: sanitizeQuestionText(questionText),
+      option_a: options.a || '', option_b: options.b || '', option_c: options.c || '', option_d: options.d || '',
+      correct_option: correctLetter || 'a',
+      correct_answer_text: '',
+      explanation: explanation
+    };
+  }
+
+  if (correctBool !== null) {
+    // cau dung/sai -> quy ve trac nghiem 2 dap an True/False
+    return {
+      question_type: 'multiple_choice',
+      question_text: sanitizeQuestionText(questionText),
+      option_a: 'True', option_b: 'False', option_c: '', option_d: '',
+      correct_option: correctBool ? 'a' : 'b',
+      correct_answer_text: '',
+      explanation: explanation
+    };
+  }
+
+  // khong co dap an trac nghiem, khong phai dung/sai -> cau tu luan (short answer)
+  return {
+    question_type: 'typed',
+    question_text: sanitizeQuestionText(questionText),
+    option_a: '', option_b: '', option_c: '', option_d: '',
+    correct_option: 'a',
+    correct_answer_text: answerFullText,
+    explanation: explanation
+  };
 }
 
 function extractQuestionsFromImage() {
   if (!selectedQuestionImage) { showToast('Chưa chọn ảnh'); return; }
   var statusText = document.getElementById('extractStatusText');
   statusText.classList.remove('hidden');
+
   statusText.textContent = 'Đang gửi ảnh cho Gemini phân tích...';
 
   var reader = new FileReader();
