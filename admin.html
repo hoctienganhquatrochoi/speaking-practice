@@ -9,6 +9,7 @@
 <title>Speaking Practice - Quản trị</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -341,28 +342,25 @@
         </div>
 
         <div class="card" style="margin-top:14px;background:#0f1420;">
-          <h2>📸 Tự động tạo câu hỏi từ ảnh (tùy chọn)</h2>
-          <p class="muted">Tải ảnh đề bài (có thể gồm cả bài đọc + câu hỏi + đáp án) → Gemini tự tách sẵn → bạn xem lại/sửa rồi mới lưu.</p>
-          <label class="file-input-label" id="questionImageLabel" for="questionImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh đề + câu hỏi</label>
-          <input type="file" id="questionImageInput" accept="image/*" onchange="onQuestionImageSelected()">
+          <h2>🤖 Tự động tạo câu hỏi bằng AI (tùy chọn)</h2>
+          <p class="muted">Đưa vào 1 trong 3 cách dưới đây (có gì dùng nấy) → AI đọc và tự tách câu hỏi + đáp án → bạn xem lại/sửa rồi mới lưu. Nhận diện được cả 3 dạng: trắc nghiệm, đúng/sai, tự luận, kể cả khi trong 1 phiếu có nhiều dạng trộn lẫn.</p>
+
+          <label style="margin-top:10px;">Cách 1 — Ảnh chụp hoặc file PDF/Word đề bài</label>
+          <label class="file-input-label" id="questionImageLabel" for="questionImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh / PDF / Word (.docx)</label>
+          <input type="file" id="questionImageInput" accept="image/*,.pdf,.docx" onchange="onQuestionImageSelected()">
           <img id="questionImagePreviewThumb" class="hidden" style="max-width:100%;max-height:220px;border-radius:8px;margin-top:8px;display:block;">
+          <p class="muted hidden" id="questionFileNamePreview" style="margin-top:8px;"></p>
           <div class="row" style="margin-top:10px;">
-            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromImage()">📸 Tự động tạo từ ảnh đã chọn</button>
-            <button class="btn-danger btn-sm hidden" id="clearQuestionImageBtn" onclick="clearQuestionImage()">🗑️ Xóa ảnh</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromImage()">🤖 Tạo câu hỏi từ file đã chọn</button>
+            <button class="btn-danger btn-sm hidden" id="clearQuestionImageBtn" onclick="clearQuestionImage()">🗑️ Xóa file</button>
           </div>
           <p class="muted hidden" id="extractStatusText" style="margin-top:8px;"></p>
-        </div>
 
-        <div class="card" style="margin-top:14px;background:#0f1420;">
-          <h2>✍️ Dán câu hỏi trắc nghiệm dạng text (tùy chọn)</h2>
-          <p class="muted">Dán khối câu hỏi đã có sẵn đáp án (không cần ngồi nhập từng ô). Hỗ trợ cả 3 dạng: trắc nghiệm A/B/C/D, Đúng/Sai, và tự luận — kể cả khi đáp án/giải thích nằm ngay trên cùng dòng với câu hỏi (không cần xuống dòng riêng cho từng đáp án). Các dòng tiêu đề mục như "A. Multiple Choice", "B. True or False" sẽ tự động được bỏ qua. Ví dụ:</p>
-          <p class="muted" style="white-space:pre-wrap;background:#171d2e;border-radius:8px;padding:10px;margin-top:6px;">1. What did Ava watch in the morning? a. Birds b. Ants c. Butterflies d. Squirrels Đáp án: b. Ants Giải thích: ...
-2. Ava watched ants in the evening. ( ) Đáp án: False
-3. What did Ava make for the ants? ........... Đáp án: Ava made a tiny ant city using leaves and sticks.</p>
-          <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán khối câu hỏi trắc nghiệm vào đây..."></textarea>
+          <label style="margin-top:18px;">Cách 2 — Dán text câu hỏi (nếu có sẵn, không cần đúng khuôn mẫu)</label>
+          <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán khối câu hỏi (trắc nghiệm/đúng-sai/tự luận, dạng nào cũng được) vào đây..."></textarea>
           <div class="row" style="margin-top:10px;">
-            <button class="btn-secondary btn-sm" onclick="parsePastedQuestions(false)">✂️ Tách thành câu hỏi</button>
-            <button class="btn-secondary btn-sm" onclick="parsePastedQuestions(true)">➕ Thêm vào danh sách hiện có</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(false)">🤖 Tạo câu hỏi từ text đã dán</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(true)">➕ Thêm vào danh sách hiện có</button>
           </div>
           <p class="muted hidden" id="pasteQuestionsStatusText" style="margin-top:8px;"></p>
         </div>
@@ -1427,29 +1425,42 @@ function setQuestionImageFile(file) {
   var label = document.getElementById('questionImageLabel');
   var clearBtn = document.getElementById('clearQuestionImageBtn');
   var thumb = document.getElementById('questionImagePreviewThumb');
+  var fileNamePreview = document.getElementById('questionFileNamePreview');
   if (file) {
     selectedQuestionImage = file;
-    label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
+    label.textContent = '✅ ' + (file.name || 'file đã chọn');
     label.classList.add('has-file');
     clearBtn.classList.remove('hidden');
-    if (thumb) { thumb.src = URL.createObjectURL(file); thumb.classList.remove('hidden'); }
+    var isImage = file.type && file.type.indexOf('image/') === 0;
+    if (isImage) {
+      if (thumb) { thumb.src = URL.createObjectURL(file); thumb.classList.remove('hidden'); }
+      if (fileNamePreview) fileNamePreview.classList.add('hidden');
+    } else {
+      if (thumb) { thumb.src = ''; thumb.classList.add('hidden'); }
+      if (fileNamePreview) {
+        var kind = file.name && file.name.toLowerCase().indexOf('.docx') !== -1 ? '📄 File Word' : '📄 File PDF';
+        fileNamePreview.textContent = kind + ': ' + file.name;
+        fileNamePreview.classList.remove('hidden');
+      }
+    }
   } else {
     selectedQuestionImage = null;
-    label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh đề + câu hỏi';
+    label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh / PDF / Word (.docx)';
     label.classList.remove('has-file');
     clearBtn.classList.add('hidden');
     if (thumb) { thumb.src = ''; thumb.classList.add('hidden'); }
+    if (fileNamePreview) fileNamePreview.classList.add('hidden');
   }
 }
 
 function clearQuestionImage() {
   document.getElementById('questionImageInput').value = '';
   setQuestionImageFile(null);
-  showToast('Đã xóa ảnh đề + câu hỏi');
+  showToast('Đã xóa file');
 }
 
-// Bo so thu tu/nhan chu dư thừa o dau cau hoi hoac dap an, dung chung cho ca
-// luong OCR tu anh (extractQuestionsFromImage) va luong dan text (parseMultipleChoiceText),
+// Bo so thu tu/nhan chu dư thừa o dau cau hoi hoac dap an (phong khi AI tra ve con sot),
+// dung chung cho moi luong tao cau hoi bang AI (anh/PDF/Word/text)
 // de tranh hien thi kieu "Câu 1: 1. ..." hoac "A. a. Birds"
 function sanitizeQuestionText(text) {
   if (!text) return '';
@@ -1555,8 +1566,98 @@ function buildMcOptionEditorHtml(qIndex, letter, labelSuffix) {
   return html;
 }
 
-// --- Dan text cau hoi trac nghiem, tu dong tach ---
-function parsePastedQuestions(appendMode) {
+// --- Tao cau hoi bang AI: tu file (anh/PDF/Word) hoac tu text dan vao ---
+function readFileAsBase64(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result.split(',')[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function applyExtractedQuestions(data, statusEl) {
+  if (data.passage_text) {
+    document.getElementById('newAssignmentPassageText').value = data.passage_text;
+  }
+  if (data.questions && data.questions.length > 0) {
+    currentQuestionsDraft = [];
+    for (var i = 0; i < data.questions.length; i++) {
+      var q = data.questions[i];
+      currentQuestionsDraft.push({
+        question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
+        question_text: sanitizeQuestionText(q.question_text || ''),
+        option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
+        correct_option: q.correct_option || 'a',
+        correct_answer_text: q.correct_answer_text || '',
+        explanation: ''
+      });
+    }
+    renderQuestionsList();
+    statusEl.textContent = '✅ Đã tách được ' + data.questions.length + ' câu hỏi, kiểm tra lại bên dưới trước khi lưu nhé.';
+  } else {
+    statusEl.textContent = '⚠️ AI không tìm thấy câu hỏi nào trong nội dung này.';
+  }
+}
+
+function extractQuestionsFromImage() {
+  if (!selectedQuestionImage) { showToast('Chưa chọn file'); return; }
+  var statusText = document.getElementById('extractStatusText');
+  statusText.classList.remove('hidden');
+  statusText.textContent = 'Đang gửi cho AI phân tích, chờ chút nhé...';
+
+  var file = selectedQuestionImage;
+  var fileName = (file.name || '').toLowerCase();
+  var isDocx = fileName.indexOf('.docx') !== -1;
+  var isPdf = fileName.indexOf('.pdf') !== -1 || file.type === 'application/pdf';
+  var isImage = file.type && file.type.indexOf('image/') === 0;
+
+  function callExtractApi(body) {
+    supabaseClient.functions.invoke('extract-comprehension-questions', { body: body })
+      .then(function(res) {
+        if (res.error) { statusText.textContent = 'Lỗi: ' + res.error.message; return; }
+        var payload = res.data;
+        if (!payload || payload.error) { statusText.textContent = 'Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi'); return; }
+        applyExtractedQuestions(payload.data, statusText);
+      }).catch(function(err) {
+        statusText.textContent = 'Lỗi: ' + String(err);
+      });
+  }
+
+  if (isDocx) {
+    if (typeof mammoth === 'undefined') {
+      statusText.textContent = 'Lỗi: chưa tải được thư viện đọc file Word, thử lại sau hoặc dùng file PDF/ảnh thay thế.';
+      return;
+    }
+    file.arrayBuffer().then(function(buf) {
+      return mammoth.extractRawText({ arrayBuffer: buf });
+    }).then(function(result) {
+      if (!result.value || !result.value.trim()) {
+        statusText.textContent = 'Không đọc được nội dung chữ nào trong file Word này.';
+        return;
+      }
+      callExtractApi({ text_content: result.value });
+    }).catch(function(err) {
+      statusText.textContent = 'Lỗi đọc file Word: ' + String(err);
+    });
+  } else if (isPdf) {
+    readFileAsBase64(file).then(function(base64) {
+      callExtractApi({ file_base64: base64, file_mime_type: 'application/pdf' });
+    }).catch(function(err) {
+      statusText.textContent = 'Lỗi đọc file PDF: ' + String(err);
+    });
+  } else if (isImage) {
+    readFileAsBase64(file).then(function(base64) {
+      callExtractApi({ image_base64: base64, image_mime_type: file.type });
+    }).catch(function(err) {
+      statusText.textContent = 'Lỗi đọc ảnh: ' + String(err);
+    });
+  } else {
+    statusText.textContent = 'Định dạng file này chưa hỗ trợ, dùng ảnh, PDF, hoặc Word (.docx) nhé.';
+  }
+}
+
+function extractQuestionsFromPastedText(appendMode) {
   var raw = document.getElementById('pasteQuestionsArea').value;
   var statusEl = document.getElementById('pasteQuestionsStatusText');
   statusEl.classList.remove('hidden');
@@ -1566,203 +1667,40 @@ function parsePastedQuestions(appendMode) {
     return;
   }
 
-  var parsed = parseMultipleChoiceText(raw);
-  if (parsed.length === 0) {
-    statusEl.textContent = 'Không nhận diện được câu hỏi nào. Kiểm tra lại định dạng (mỗi câu có câu hỏi + các dòng đáp án A/B/C/D).';
-    return;
-  }
+  statusEl.textContent = 'Đang gửi cho AI phân tích, chờ chút nhé...';
 
-  if (appendMode) {
-    currentQuestionsDraft = currentQuestionsDraft.concat(parsed);
-  } else {
-    currentQuestionsDraft = parsed;
-  }
-  renderQuestionsList();
-  statusEl.textContent = '✅ Đã tách được ' + parsed.length + ' câu hỏi. Kiểm tra lại bên dưới trước khi lưu.';
-}
-
-function parseMultipleChoiceText(raw) {
-  var text = raw.replace(/\r\n/g, '\n');
-
-  // 1) Bo cac dong tieu de muc / huong dan (khong phai cau hoi that)
-  //    VD: "Questions", "A. Multiple Choice", "B. True or False", "C. Short Answer", "Các bạn đọc bài..."
-  var lines = text.split('\n');
-  var filtered = [];
-  for (var li = 0; li < lines.length; li++) {
-    var t = lines[li].trim();
-    if (t === '') { filtered.push(lines[li]); continue; }
-    if (/^questions?$/i.test(t)) continue;
-    if (/^[A-Za-z][\.\):]\s*(multiple\s*choice|true\s*(\/|or)\s*false|short\s*answer|essay|writing|fill[\s\-]*in)/i.test(t)) continue;
-    if (/^(các\s*bạn|hãy\s*(chọn|đọc)|read\s+the|choose\s+the)/i.test(t)) continue;
-    filtered.push(lines[li]);
-  }
-  text = filtered.join('\n');
-
-  // 2) Chen dau moc truoc moi so thu tu dau cau hoi (VD "1.", "2)"), du la sau dau xuong dong
-  //    hay chi la sau dau cham/hoi/! cua cau truoc (truong hop dan nguyen 1 doan van khong xuong dong)
-  //    -> giup tach dung tung cau ke ca khi dinh dang dan vao khong ro rang
-  var MARK = '\u0001QSTART\u0001';
-  var withMarks = text.replace(/(^|[\.\?\!]\s+|\n)(\d{1,2}[\.\)]\s)/g, function(m, pre, num) {
-    return pre + MARK + num;
-  });
-
-  var rawChunks = withMarks.split(MARK);
-  var results = [];
-  for (var c = 0; c < rawChunks.length; c++) {
-    var chunkText = rawChunks[c].trim();
-    if (!chunkText || !/^\d{1,2}[\.\)]\s/.test(chunkText)) continue; // bo phan mo dau khong phai cau hoi
-    var parsed = parseOneQuestionChunk(chunkText);
-    if (parsed) results.push(parsed);
-  }
-  return results;
-}
-
-// Phan tich 1 khoi van ban dai dien cho 1 cau hoi (co the la trac nghiem A/B/C/D,
-// dung/sai, hoac tu luan), bat ke dap an/giai thich nam tren dong rieng hay dinh lien trong cung 1 dong.
-function parseOneQuestionChunk(chunkRaw) {
-  var chunk = chunkRaw.replace(/^\s*\d{1,2}[\.\)]\s*/, '');
-  chunk = chunk.replace(/\s+/g, ' ').trim(); // gop ve 1 dong cho de xu ly bang regex
-
-  var explanation = '';
-  var expMatch = chunk.match(/(?:Giải\s*thích|Explanation)\s*[:\-]?\s*(.+)$/i);
-  if (expMatch) {
-    explanation = expMatch[1].trim();
-    chunk = chunk.slice(0, expMatch.index).trim();
-  }
-
-  var correctLetter = null;
-  var correctBool = null;
-  var answerFullText = '';
-
-  var ansLetterMatch = chunk.match(/(?:Đáp\s*án(?:\s*đúng)?|Dap\s*an(?:\s*dung)?|(?:Correct\s*)?Answer)\s*[:\-]?\s*([A-Da-d])\b/i);
-  var ansTFMatch = chunk.match(/(?:Đáp\s*án(?:\s*đúng)?|Dap\s*an(?:\s*dung)?|(?:Correct\s*)?Answer)\s*[:\-]?\s*(True|False|Đúng|Sai)\b/i);
-
-  if (ansLetterMatch) {
-    correctLetter = ansLetterMatch[1].toLowerCase();
-    chunk = chunk.slice(0, ansLetterMatch.index).trim();
-  } else if (ansTFMatch) {
-    var tfWord = ansTFMatch[1].toLowerCase();
-    correctBool = (tfWord === 'true' || tfWord === 'đúng');
-    chunk = chunk.slice(0, ansTFMatch.index).trim();
-  } else {
-    var ansGenericMatch = chunk.match(/(?:Đáp\s*án(?:\s*đúng)?|Dap\s*an(?:\s*dung)?|(?:Correct\s*)?Answer)\s*[:\-]?\s*(.+)$/i);
-    if (ansGenericMatch) {
-      answerFullText = ansGenericMatch[1].trim();
-      chunk = chunk.slice(0, ansGenericMatch.index).trim();
-    }
-  }
-
-  // tim vi tri bat dau phan dap an trac nghiem "a. ... b. ... c. ... d. ..." (neu co, co the nam
-  // ngay tren cung 1 dong voi cau hoi)
-  var optStartMatch = chunk.match(/\ba[\.\)]\s+/i);
-  var questionText, optionsBlob;
-  if (optStartMatch) {
-    questionText = chunk.slice(0, optStartMatch.index).trim();
-    optionsBlob = chunk.slice(optStartMatch.index).trim();
-  } else {
-    questionText = chunk.trim();
-    optionsBlob = '';
-  }
-
-  questionText = questionText
-    .replace(/\(\s*\)\s*$/, '')      // bo o trong "( )" cuoi cau hoi dung/sai
-    .replace(/\.{3,}\s*$/, '')       // bo cham cham cham (cho tu luan)
-    .replace(/_{3,}\s*$/, '')        // bo gach chan (cho tu luan)
-    .replace(/[:\-]\s*$/, '')
-    .trim();
-  if (!questionText) return null;
-
-  var options = { a: '', b: '', c: '', d: '' };
-  if (optionsBlob) {
-    var parts = optionsBlob.split(/\s(?=[a-d][\.\)]\s)/i);
-    for (var p = 0; p < parts.length; p++) {
-      var pm = parts[p].match(/^([a-d])[\.\)]\s*(.+)$/i);
-      if (pm) options[pm[1].toLowerCase()] = sanitizeOptionText(pm[2].trim());
-    }
-  }
-  var hasOptions = options.a || options.b || options.c || options.d;
-
-  if (hasOptions) {
-    return {
-      question_type: 'multiple_choice',
-      question_text: sanitizeQuestionText(questionText),
-      option_a: options.a || '', option_b: options.b || '', option_c: options.c || '', option_d: options.d || '',
-      correct_option: correctLetter || 'a',
-      correct_answer_text: '',
-      explanation: explanation
-    };
-  }
-
-  if (correctBool !== null) {
-    // cau dung/sai -> quy ve trac nghiem 2 dap an True/False
-    return {
-      question_type: 'multiple_choice',
-      question_text: sanitizeQuestionText(questionText),
-      option_a: 'True', option_b: 'False', option_c: '', option_d: '',
-      correct_option: correctBool ? 'a' : 'b',
-      correct_answer_text: '',
-      explanation: explanation
-    };
-  }
-
-  // khong co dap an trac nghiem, khong phai dung/sai -> cau tu luan (short answer)
-  return {
-    question_type: 'typed',
-    question_text: sanitizeQuestionText(questionText),
-    option_a: '', option_b: '', option_c: '', option_d: '',
-    correct_option: 'a',
-    correct_answer_text: answerFullText,
-    explanation: explanation
-  };
-}
-
-function extractQuestionsFromImage() {
-  if (!selectedQuestionImage) { showToast('Chưa chọn ảnh'); return; }
-  var statusText = document.getElementById('extractStatusText');
-  statusText.classList.remove('hidden');
-
-  statusText.textContent = 'Đang gửi ảnh cho Gemini phân tích...';
-
-  var reader = new FileReader();
-  reader.onload = function() {
-    var base64 = reader.result.split(',')[1];
-    supabaseClient.functions.invoke('extract-comprehension-questions', {
-      body: { image_base64: base64, image_mime_type: selectedQuestionImage.type }
-    }).then(function(res) {
-      if (res.error) {
-        statusText.textContent = 'Lỗi: ' + res.error.message;
-        return;
-      }
+  supabaseClient.functions.invoke('extract-comprehension-questions', { body: { text_content: raw } })
+    .then(function(res) {
+      if (res.error) { statusEl.textContent = 'Lỗi: ' + res.error.message; return; }
       var payload = res.data;
-      if (!payload || payload.error) {
-        statusText.textContent = 'Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi');
+      if (!payload || payload.error) { statusEl.textContent = 'Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi'); return; }
+      var data = payload.data;
+      if (!data.questions || data.questions.length === 0) {
+        statusEl.textContent = '⚠️ AI không tìm thấy câu hỏi nào trong đoạn text này.';
         return;
       }
-      var data = payload.data;
-      if (data.passage_text) {
-        document.getElementById('newAssignmentPassageText').value = data.passage_text;
+      var newQuestions = [];
+      for (var i = 0; i < data.questions.length; i++) {
+        var q = data.questions[i];
+        newQuestions.push({
+          question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
+          question_text: sanitizeQuestionText(q.question_text || ''),
+          option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
+          correct_option: q.correct_option || 'a',
+          correct_answer_text: q.correct_answer_text || '',
+          explanation: ''
+        });
       }
-      if (data.questions && data.questions.length > 0) {
-        currentQuestionsDraft = [];
-        for (var i = 0; i < data.questions.length; i++) {
-          var q = data.questions[i];
-          currentQuestionsDraft.push({
-            question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
-            question_text: sanitizeQuestionText(q.question_text || ''),
-            option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
-            correct_option: q.correct_option || 'a',
-            correct_answer_text: q.correct_answer_text || '',
-            explanation: ''
-          });
-        }
-        renderQuestionsList();
+      if (appendMode) {
+        currentQuestionsDraft = currentQuestionsDraft.concat(newQuestions);
+      } else {
+        currentQuestionsDraft = newQuestions;
       }
-      statusText.textContent = '✅ Đã tách xong, kiểm tra lại nội dung/câu hỏi bên dưới trước khi lưu nhé.';
+      renderQuestionsList();
+      statusEl.textContent = '✅ Đã tách được ' + newQuestions.length + ' câu hỏi, kiểm tra lại bên dưới trước khi lưu nhé.';
     }).catch(function(err) {
-      statusText.textContent = 'Lỗi: ' + String(err);
+      statusEl.textContent = 'Lỗi: ' + String(err);
     });
-  };
-  reader.readAsDataURL(selectedQuestionImage);
 }
 
 function showAddAssignmentMsg(html) {
