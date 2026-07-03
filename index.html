@@ -172,6 +172,9 @@
   .mc-option input[type=radio] { width: 16px; height: 16px; flex-shrink: 0; }
   .mc-option.selected { border-color: #4c6fff; background: #1b2540; }
   .mc-option span { line-height: 1.4; }
+  .mc-option-img { flex-direction: column; align-items: center; text-align: center; padding: 12px 10px; gap: 6px; }
+  .mc-option-img input[type=radio] { align-self: flex-start; }
+  .mc-option-thumb { max-width: 100%; max-height: 90px; object-fit: contain; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -1289,19 +1292,26 @@ function renderComprehensionQuestions() {
     html += '<p style="font-weight:600;margin:0 0 8px 0;">Câu ' + (i + 1) + ': ' + escapeHtml(cleanQuestionText) + '</p>';
 
     if (q.question_type === 'multiple_choice') {
-      var optsRaw = [['a', q.option_a], ['b', q.option_b], ['c', q.option_c], ['d', q.option_d]];
-      var opts = optsRaw.filter(function(o) { return o[1]; });
+      var optsRaw = [
+        ['a', q.option_a, q.option_a_image_url],
+        ['b', q.option_b, q.option_b_image_url],
+        ['c', q.option_c, q.option_c_image_url],
+        ['d', q.option_d, q.option_d_image_url]
+      ];
+      var opts = optsRaw.filter(function(o) { return (o[1] && o[1].trim()) || o[2]; });
       if (!q._shuffledOpts) q._shuffledOpts = shuffleArray(opts);
       var displayOpts = q._shuffledOpts;
 
       html += '<div class="mc-options-grid">';
       for (var o = 0; o < displayOpts.length; o++) {
         var letter = displayOpts[o][0];
-        var optText = sanitizeOptionText(displayOpts[o][1]);
+        var optText = sanitizeOptionText(displayOpts[o][1] || '');
+        var optImgUrl = displayOpts[o][2];
         var inputId = 'opt_' + q.id + '_' + letter;
-        html += '<label class="mc-option" for="' + inputId + '">';
+        html += '<label class="mc-option' + (optImgUrl ? ' mc-option-img' : '') + '" for="' + inputId + '">';
         html += '<input type="radio" id="' + inputId + '" name="q_' + q.id + '" value="' + letter + '" onchange="onMcOptionChange(this)">';
-        html += '<span>' + escapeHtml(optText) + '</span>';
+        if (optImgUrl) html += '<img src="' + optImgUrl + '" class="mc-option-thumb">';
+        if (optText) html += '<span>' + escapeHtml(optText) + '</span>';
         html += '</label>';
       }
       html += '</div>';
