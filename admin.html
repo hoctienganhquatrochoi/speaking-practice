@@ -334,16 +334,36 @@
         <div class="card" style="margin-top:14px;background:#0f1420;">
           <h2>📸 Tự động tạo câu hỏi từ ảnh (tùy chọn)</h2>
           <p class="muted">Tải ảnh đề bài (có thể gồm cả bài đọc + câu hỏi + đáp án) → Gemini tự tách sẵn → bạn xem lại/sửa rồi mới lưu.</p>
-          <label class="file-input-label" id="questionImageLabel" for="questionImageInput">🖼️ Bấm để chọn ảnh đề + câu hỏi</label>
+          <label class="file-input-label" id="questionImageLabel" for="questionImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh đề + câu hỏi</label>
           <input type="file" id="questionImageInput" accept="image/*" onchange="onQuestionImageSelected()">
-          <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="extractQuestionsFromImage()">📸 Tự động tạo từ ảnh đã chọn</button>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromImage()">📸 Tự động tạo từ ảnh đã chọn</button>
+            <button class="btn-danger btn-sm hidden" id="clearQuestionImageBtn" onclick="clearQuestionImage()">🗑️ Xóa ảnh</button>
+          </div>
           <p class="muted hidden" id="extractStatusText" style="margin-top:8px;"></p>
+        </div>
+
+        <div class="card" style="margin-top:14px;background:#0f1420;">
+          <h2>✍️ Dán câu hỏi trắc nghiệm dạng text (tùy chọn)</h2>
+          <p class="muted">Dán khối câu hỏi đã có sẵn đáp án (không cần ngồi nhập từng ô). Mỗi câu cách nhau 1 dòng trống, đáp án ghi ở cuối mỗi câu dạng "Đáp án: B" (hoặc "Answer: B"). Ví dụ:</p>
+          <p class="muted" style="white-space:pre-wrap;background:#171d2e;border-radius:8px;padding:10px;margin-top:6px;">1. What did Ava watch in the morning?
+A. Birds
+B. Ants
+C. Butterflies
+D. Squirrels
+Đáp án: B</p>
+          <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán khối câu hỏi trắc nghiệm vào đây..."></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn-secondary btn-sm" onclick="parsePastedQuestions(false)">✂️ Tách thành câu hỏi</button>
+            <button class="btn-secondary btn-sm" onclick="parsePastedQuestions(true)">➕ Thêm vào danh sách hiện có</button>
+          </div>
+          <p class="muted hidden" id="pasteQuestionsStatusText" style="margin-top:8px;"></p>
         </div>
 
         <div class="card" style="margin-top:14px;background:#0f1420;">
           <h2>Câu hỏi</h2>
           <div id="questionsListBox"></div>
-          <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="addQuestionRow()">+ Thêm câu hỏi</button>
+          <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="addQuestionRow()">+ Thêm câu hỏi thủ công</button>
         </div>
       </div>
 
@@ -356,7 +376,9 @@
       <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, danh sách từ vựng, hoặc ảnh Cue Card)</label>
       <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
       <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
-      <button class="btn-primary" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
+      <button class="btn-danger btn-sm hidden" id="clearAssignmentImageBtn" onclick="clearAssignmentImage()" style="margin-top:8px;">🗑️ Xóa ảnh</button>
+      <div id="addAssignmentMsgArea" style="margin-top:10px;"></div>
+      <button class="btn-primary" id="createAssignmentBtn" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
     </div>
 
     <div class="card">
@@ -1179,10 +1201,6 @@ function onAssignmentTypeChange() {
   comprehensionBlock.classList.toggle('hidden', !isComprehension);
   listeningAudioBlock.classList.toggle('hidden', type !== 'listening');
 
-  if (isComprehension && currentQuestionsDraft.length === 0) {
-    addQuestionRow(); // sẵn 1 câu trống để bắt đầu
-  }
-
   if (type === 'ielts_part2') {
     topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
     descHint.textContent = '(gợi ý/bullet points như thẻ Cue Card thật, VD: You should say: where you went / who you went with / what you did...)';
@@ -1212,41 +1230,82 @@ function onAssignmentImageSelected() {
 
 function setAssignmentImageFile(file) {
   var label = document.getElementById('assignmentImageLabel');
+  var clearBtn = document.getElementById('clearAssignmentImageBtn');
   if (file) {
     selectedAssignmentImage = file;
     label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
+    clearBtn.classList.remove('hidden');
   } else {
     selectedAssignmentImage = null;
     label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
     label.classList.remove('has-file');
+    clearBtn.classList.add('hidden');
   }
 }
 
-// Dán ảnh bằng Ctrl+V (khi đang ở trong khu vực tạo bài giao)
+function clearAssignmentImage() {
+  document.getElementById('assignmentImageInput').value = '';
+  setAssignmentImageFile(null);
+  showToast('Đã xóa ảnh đề bài');
+}
+
+// Dán ảnh bằng Ctrl+V (tự nhận biết dán vào ô "Ảnh đề bài" hay ô "Tự động tạo câu hỏi từ ảnh"
+// tùy theo ô nào được rê chuột/focus gần nhất; mặc định ưu tiên ô câu hỏi khi đang mở loại bài đọc hiểu/nghe hiểu)
+var lastHoveredPasteZone = 'assignment';
+(function setupPasteZoneTracking() {
+  function bind() {
+    var qLabel = document.getElementById('questionImageLabel');
+    var aLabel = document.getElementById('assignmentImageLabel');
+    if (qLabel) {
+      qLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'question'; });
+      qLabel.addEventListener('focus', function () { lastHoveredPasteZone = 'question'; });
+    }
+    if (aLabel) {
+      aLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'assignment'; });
+      aLabel.addEventListener('focus', function () { lastHoveredPasteZone = 'assignment'; });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
+  }
+})();
+
 document.addEventListener('paste', function(e) {
-  var assignmentCard = document.getElementById('assignmentImageLabel');
-  if (!assignmentCard) return;
   var assignmentsTabVisible = !document.getElementById('tabAssignments').classList.contains('hidden');
   if (!assignmentsTabVisible) return;
   if (!e.clipboardData || !e.clipboardData.items) return;
+
+  var imageFile = null;
   for (var i = 0; i < e.clipboardData.items.length; i++) {
     var item = e.clipboardData.items[i];
     if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
-      var file = item.getAsFile();
-      setAssignmentImageFile(file);
-      showToast('Đã dán ảnh');
+      imageFile = item.getAsFile();
       break;
     }
+  }
+  if (!imageFile) return;
+
+  var comprehensionVisible = !document.getElementById('comprehensionBlock').classList.contains('hidden');
+  var targetZone = (comprehensionVisible && lastHoveredPasteZone === 'question') ? 'question' : 'assignment';
+  // neu dang o dang bai doc hieu/nghe hieu va chua tung rê chuột vao o nao, uu tien dan vao o cau hoi (hay dung hon)
+  if (comprehensionVisible && lastHoveredPasteZone !== 'assignment' && !selectedAssignmentImage) targetZone = 'question';
+
+  if (targetZone === 'question') {
+    setQuestionImageFile(imageFile);
+    showToast('Đã dán ảnh vào ô "Tự động tạo câu hỏi từ ảnh"');
+  } else {
+    setAssignmentImageFile(imageFile);
+    showToast('Đã dán ảnh vào ô "Ảnh đề bài"');
   }
 });
 
 // Kéo thả ảnh vào ô chọn ảnh
 (function setupAssignmentDragDrop() {
-  document.addEventListener('DOMContentLoaded', function() {});
-  var label = null;
-  function bind() {
-    label = document.getElementById('assignmentImageLabel');
+  function bindOne(labelId, setFn) {
+    var label = document.getElementById(labelId);
     if (!label) return;
     label.addEventListener('dragover', function(e) {
       e.preventDefault();
@@ -1259,9 +1318,13 @@ document.addEventListener('paste', function(e) {
       e.preventDefault();
       label.style.borderColor = '';
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        setAssignmentImageFile(e.dataTransfer.files[0]);
+        setFn(e.dataTransfer.files[0]);
       }
     });
+  }
+  function bind() {
+    bindOne('assignmentImageLabel', setAssignmentImageFile);
+    bindOne('questionImageLabel', setQuestionImageFile);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bind);
@@ -1293,16 +1356,33 @@ function onAssignmentAudioSelected() {
 
 function onQuestionImageSelected() {
   var input = document.getElementById('questionImageInput');
-  var label = document.getElementById('questionImageLabel');
   if (input.files && input.files.length > 0) {
-    selectedQuestionImage = input.files[0];
-    label.textContent = '✅ ' + selectedQuestionImage.name;
+    setQuestionImageFile(input.files[0]);
+  } else {
+    setQuestionImageFile(null);
+  }
+}
+
+function setQuestionImageFile(file) {
+  var label = document.getElementById('questionImageLabel');
+  var clearBtn = document.getElementById('clearQuestionImageBtn');
+  if (file) {
+    selectedQuestionImage = file;
+    label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
+    clearBtn.classList.remove('hidden');
   } else {
     selectedQuestionImage = null;
-    label.textContent = '🖼️ Bấm để chọn ảnh đề + câu hỏi';
+    label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh đề + câu hỏi';
     label.classList.remove('has-file');
+    clearBtn.classList.add('hidden');
   }
+}
+
+function clearQuestionImage() {
+  document.getElementById('questionImageInput').value = '';
+  setQuestionImageFile(null);
+  showToast('Đã xóa ảnh đề + câu hỏi');
 }
 
 function addQuestionRow() {
@@ -1334,7 +1414,7 @@ function onQuestionTypeChange(index, value) {
 function renderQuestionsList() {
   var box = document.getElementById('questionsListBox');
   if (currentQuestionsDraft.length === 0) {
-    box.innerHTML = '<p class="muted">Chưa có câu hỏi nào, bấm "+ Thêm câu hỏi" bên dưới</p>';
+    box.innerHTML = '<p class="muted">Chưa có câu hỏi nào. Dùng "Tự động tạo từ ảnh" hoặc "Dán câu hỏi trắc nghiệm dạng text" ở trên, hoặc bấm "+ Thêm câu hỏi thủ công" bên dưới để tự nhập.</p>';
     return;
   }
   var html = '';
@@ -1380,6 +1460,111 @@ function renderQuestionsList() {
     html += '</div>';
   }
   box.innerHTML = html;
+}
+
+// --- Dan text cau hoi trac nghiem, tu dong tach ---
+function parsePastedQuestions(appendMode) {
+  var raw = document.getElementById('pasteQuestionsArea').value;
+  var statusEl = document.getElementById('pasteQuestionsStatusText');
+  statusEl.classList.remove('hidden');
+
+  if (!raw || !raw.trim()) {
+    statusEl.textContent = 'Chưa dán nội dung nào.';
+    return;
+  }
+
+  var parsed = parseMultipleChoiceText(raw);
+  if (parsed.length === 0) {
+    statusEl.textContent = 'Không nhận diện được câu hỏi nào. Kiểm tra lại định dạng (mỗi câu có câu hỏi + các dòng đáp án A/B/C/D).';
+    return;
+  }
+
+  if (appendMode) {
+    currentQuestionsDraft = currentQuestionsDraft.concat(parsed);
+  } else {
+    currentQuestionsDraft = parsed;
+  }
+  renderQuestionsList();
+  statusEl.textContent = '✅ Đã tách được ' + parsed.length + ' câu hỏi. Kiểm tra lại bên dưới trước khi lưu.';
+}
+
+function parseMultipleChoiceText(raw) {
+  var text = raw.replace(/\r\n/g, '\n');
+  // tach thanh cac khoi theo dong trong, hoac theo dong bat dau bang so thu tu "1." "2)" ...
+  var rawBlocks = text.split(/\n\s*\n/);
+  var blocks = [];
+  for (var b = 0; b < rawBlocks.length; b++) {
+    var blk = rawBlocks[b].trim();
+    if (!blk) continue;
+    // neu 1 khoi chua nhieu cau hoi gop lai (khong co dong trong giua), tach tiep theo pattern so thu tu dau dong
+    var subParts = blk.split(/\n(?=\s*\d{1,2}[\.\)]\s)/);
+    for (var sp = 0; sp < subParts.length; sp++) {
+      if (subParts[sp].trim()) blocks.push(subParts[sp].trim());
+    }
+  }
+
+  var results = [];
+  var optionLineRe = /^\s*([A-Da-d])[\.\)]\s*(.+)$/;
+  var answerLineRe = /^\s*(?:Đáp\s*án|Dap\s*an|Answer|Correct\s*answer)\s*[:\-]?\s*([A-Da-d])\b.*$/i;
+
+  for (var i = 0; i < blocks.length; i++) {
+    var lines = blocks[i].split('\n');
+    var questionLines = [];
+    var options = { a: '', b: '', c: '', d: '' };
+    var correct = null;
+    var seenOption = false;
+
+    for (var l = 0; l < lines.length; l++) {
+      var line = lines[l].trim();
+      if (!line) continue;
+
+      var ansMatch = line.match(answerLineRe);
+      if (ansMatch) {
+        correct = ansMatch[1].toLowerCase();
+        continue;
+      }
+
+      var optMatch = line.match(optionLineRe);
+      if (optMatch) {
+        seenOption = true;
+        var letter = optMatch[1].toLowerCase();
+        var optText = optMatch[2].trim();
+        // neu dap an duoc danh dau bang * hoac **bold** hoac [correct] o cuoi dong
+        var markedCorrect = false;
+        if (/(\*\*|\*|\[đúng\]|\[dung\]|\[correct\])\s*$/i.test(optText)) {
+          markedCorrect = true;
+          optText = optText.replace(/(\*\*|\*|\[đúng\]|\[dung\]|\[correct\])\s*$/i, '').trim();
+        }
+        options[letter] = optText;
+        if (markedCorrect) correct = letter;
+        continue;
+      }
+
+      if (!seenOption) {
+        // dong cau hoi, bo so thu tu dau dong kieu "1." "Câu 1:" "Question 2)"
+        var cleaned = line.replace(/^\s*(?:câu|cau|question)?\s*\d{1,2}\s*[\.\):]\s*/i, '');
+        questionLines.push(cleaned);
+      }
+    }
+
+    var questionText = questionLines.join(' ').trim();
+    var hasAnyOption = options.a || options.b || options.c || options.d;
+    if (!questionText || !hasAnyOption) continue; // bo qua khoi khong hop le
+
+    results.push({
+      question_type: 'multiple_choice',
+      question_text: questionText,
+      option_a: options.a || '',
+      option_b: options.b || '',
+      option_c: options.c || '',
+      option_d: options.d || '',
+      correct_option: correct || 'a',
+      correct_answer_text: '',
+      explanation: ''
+    });
+  }
+
+  return results;
 }
 
 function extractQuestionsFromImage() {
@@ -1430,7 +1615,17 @@ function extractQuestionsFromImage() {
   reader.readAsDataURL(selectedQuestionImage);
 }
 
+function showAddAssignmentMsg(html) {
+  document.getElementById('addAssignmentMsgArea').innerHTML = html;
+}
+function clearAddAssignmentMsg() {
+  document.getElementById('addAssignmentMsgArea').innerHTML = '';
+}
+
+var pendingRetryAssignmentId = null;
+
 function addAssignment() {
+  clearAddAssignmentMsg();
   var topic = document.getElementById('newAssignmentTopic').value.trim();
   var description = document.getElementById('newAssignmentDescription').value.trim();
   var dueDate = document.getElementById('newAssignmentDueDate').value;
@@ -1453,8 +1648,9 @@ function addAssignment() {
   if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
   if (type === 'listening' && !selectedAssignmentAudio) { showToast('Loại "Nghe hiểu" cần tải file âm thanh lên'); return; }
+  var validQuestions = [];
   if (isComprehension) {
-    var validQuestions = currentQuestionsDraft.filter(function(q) { return q.question_text.trim(); });
+    validQuestions = currentQuestionsDraft.filter(function(q) { return q.question_text.trim(); });
     if (validQuestions.length === 0) { showToast('Cần ít nhất 1 câu hỏi có nội dung'); return; }
     for (var vq = 0; vq < validQuestions.length; vq++) {
       if (validQuestions[vq].question_type === 'multiple_choice' && !validQuestions[vq].option_a.trim() && !validQuestions[vq].option_b.trim()) {
@@ -1463,6 +1659,10 @@ function addAssignment() {
     }
   }
 
+  var createBtn = document.getElementById('createAssignmentBtn');
+  createBtn.disabled = true;
+  createBtn.textContent = 'Đang lưu...';
+
   function insertExclusionsThenFinish(assignmentId) {
     if (excludedStudentIds.length === 0) { finishAssignmentCreation(); return; }
     var excludeLinks = [];
@@ -1470,14 +1670,15 @@ function addAssignment() {
       excludeLinks.push({ assignment_id: assignmentId, student_id: excludedStudentIds[i] });
     }
     supabaseClient.from('sp_assignment_excluded_students').insert(excludeLinks).then(function(exRes) {
-      if (exRes.error) showToast('Lỗi lưu danh sách loại trừ: ' + exRes.error.message);
+      if (exRes.error) {
+        showAddAssignmentMsg('<div style="background:#4a2030;color:#ff9db0;padding:10px 14px;border-radius:8px;font-size:13px;">⚠️ Bài giao và câu hỏi đã lưu thành công, nhưng lưu danh sách học sinh loại trừ bị lỗi: ' + escapeHtml(exRes.error.message) + ' (có thể học sinh nghỉ vẫn thấy bài này, cô có thể bỏ qua nếu không quan trọng)</div>');
+      }
       finishAssignmentCreation();
     });
   }
 
   function insertQuestionsThenExclusions(assignmentId) {
     if (!isComprehension) { insertExclusionsThenFinish(assignmentId); return; }
-    var validQuestions = currentQuestionsDraft.filter(function(q) { return q.question_text.trim(); });
     var rows = [];
     for (var i = 0; i < validQuestions.length; i++) {
       var q = validQuestions[i];
@@ -1496,12 +1697,37 @@ function addAssignment() {
       });
     }
     supabaseClient.from('sp_comprehension_questions').insert(rows).then(function(qRes) {
-      if (qRes.error) showToast('Lỗi lưu câu hỏi: ' + qRes.error.message);
+      if (qRes.error) {
+        // QUAN TRONG: KHONG tiep tuc reset form khi luu cau hoi bi loi, de khong mat du lieu da soan.
+        pendingRetryAssignmentId = assignmentId;
+        createBtn.disabled = false;
+        createBtn.textContent = '+ Tạo bài giao';
+        showAddAssignmentMsg(
+          '<div style="background:#4a2030;color:#ff9db0;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.6;">' +
+          '❌ Đã tạo bài giao nhưng <b>LƯU CÂU HỎI BỊ LỖI</b>, câu hỏi chưa được lưu:<br>' +
+          '<code style="word-break:break-all;">' + escapeHtml(qRes.error.message) + '</code><br>' +
+          'Danh sách câu hỏi bên dưới vẫn còn nguyên, cô kiểm tra lại rồi bấm nút bên dưới để thử lưu lại (không cần làm lại từ đầu).' +
+          '</div>' +
+          '<button class="btn-primary btn-sm" style="margin-top:10px;" onclick="retrySaveQuestions()">🔁 Thử lưu lại câu hỏi</button>'
+        );
+        return;
+      }
       insertExclusionsThenFinish(assignmentId);
     });
   }
 
+  window.retrySaveQuestions = function() {
+    if (!pendingRetryAssignmentId) return;
+    clearAddAssignmentMsg();
+    createBtn.disabled = true;
+    createBtn.textContent = 'Đang thử lại...';
+    insertQuestionsThenExclusions(pendingRetryAssignmentId);
+  };
+
   function finishAssignmentCreation() {
+    pendingRetryAssignmentId = null;
+    createBtn.disabled = false;
+    createBtn.textContent = '+ Tạo bài giao';
     showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp' + (excludedStudentIds.length > 0 ? ', loại trừ ' + excludedStudentIds.length + ' học sinh' : ''));
     document.getElementById('newAssignmentTopic').value = '';
     document.getElementById('newAssignmentDescription').value = '';
@@ -1509,16 +1735,16 @@ function addAssignment() {
     document.getElementById('newAssignmentReadingText').value = '';
     document.getElementById('newAssignmentQuestionsText').value = '';
     document.getElementById('newAssignmentPassageText').value = '';
+    document.getElementById('pasteQuestionsArea').value = '';
+    document.getElementById('pasteQuestionsStatusText').classList.add('hidden');
     setAssignmentImageFile(null);
     document.getElementById('assignmentImageInput').value = '';
     selectedAssignmentAudio = null;
     document.getElementById('assignmentAudioInput').value = '';
     document.getElementById('assignmentAudioLabel').textContent = '🎵 Bấm để chọn file âm thanh';
     document.getElementById('assignmentAudioLabel').classList.remove('has-file');
-    selectedQuestionImage = null;
+    setQuestionImageFile(null);
     document.getElementById('questionImageInput').value = '';
-    document.getElementById('questionImageLabel').textContent = '🖼️ Bấm để chọn ảnh đề + câu hỏi';
-    document.getElementById('questionImageLabel').classList.remove('has-file');
     document.getElementById('extractStatusText').classList.add('hidden');
     currentQuestionsDraft = [];
     renderQuestionsList();
@@ -1541,14 +1767,24 @@ function addAssignment() {
       content_audio_url: audioUrl || null,
       passage_text: isComprehension ? (passageText || null) : null
     }).select().single().then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      if (res.error) {
+        createBtn.disabled = false;
+        createBtn.textContent = '+ Tạo bài giao';
+        showAddAssignmentMsg('<div style="background:#4a2030;color:#ff9db0;padding:10px 14px;border-radius:8px;font-size:13px;">❌ Lỗi tạo bài giao: ' + escapeHtml(res.error.message) + '</div>');
+        return;
+      }
       var assignmentId = res.data.id;
       var links = [];
       for (var i = 0; i < selectedClassIds.length; i++) {
         links.push({ assignment_id: assignmentId, class_id: selectedClassIds[i] });
       }
       supabaseClient.from('sp_assignment_classes').insert(links).then(function(linkRes) {
-        if (linkRes.error) { showToast('Lỗi gán lớp: ' + linkRes.error.message); return; }
+        if (linkRes.error) {
+          createBtn.disabled = false;
+          createBtn.textContent = '+ Tạo bài giao';
+          showAddAssignmentMsg('<div style="background:#4a2030;color:#ff9db0;padding:10px 14px;border-radius:8px;font-size:13px;">❌ Lỗi gán lớp: ' + escapeHtml(linkRes.error.message) + '</div>');
+          return;
+        }
         insertQuestionsThenExclusions(assignmentId);
       });
     });
@@ -1560,7 +1796,12 @@ function addAssignment() {
       var path = 'assignments/' + Date.now() + '.' + ext;
       supabaseClient.storage.from('assignment-images').upload(path, selectedAssignmentImage)
         .then(function(uploadRes) {
-          if (uploadRes.error) { showToast('Lỗi upload ảnh: ' + uploadRes.error.message); return; }
+          if (uploadRes.error) {
+            createBtn.disabled = false;
+            createBtn.textContent = '+ Tạo bài giao';
+            showAddAssignmentMsg('<div style="background:#4a2030;color:#ff9db0;padding:10px 14px;border-radius:8px;font-size:13px;">❌ Lỗi upload ảnh: ' + escapeHtml(uploadRes.error.message) + '</div>');
+            return;
+          }
           var urlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(path);
           insertAssignment(urlRes.data.publicUrl, audioUrl);
         });
@@ -1574,7 +1815,12 @@ function addAssignment() {
     var audioPath = 'assignments-audio/' + Date.now() + '.' + audioExt;
     supabaseClient.storage.from('speaking-videos').upload(audioPath, selectedAssignmentAudio)
       .then(function(audioUploadRes) {
-        if (audioUploadRes.error) { showToast('Lỗi upload âm thanh: ' + audioUploadRes.error.message); return; }
+        if (audioUploadRes.error) {
+          createBtn.disabled = false;
+          createBtn.textContent = '+ Tạo bài giao';
+          showAddAssignmentMsg('<div style="background:#4a2030;color:#ff9db0;padding:10px 14px;border-radius:8px;font-size:13px;">❌ Lỗi upload âm thanh: ' + escapeHtml(audioUploadRes.error.message) + '</div>');
+          return;
+        }
         var audioUrlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(audioPath);
         uploadImageThenInsert(audioUrlRes.data.publicUrl);
       });
