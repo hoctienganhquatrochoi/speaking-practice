@@ -373,16 +373,27 @@ D. Squirrels
       <textarea id="newAssignmentDescription" rows="3" placeholder="Yêu cầu chi tiết cho học sinh..."></textarea>
       <label>Hạn nộp (tùy chọn)</label>
       <input type="date" id="newAssignmentDueDate">
-      <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, danh sách từ vựng, hoặc ảnh Cue Card)</label>
-      <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
-      <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
-      <button class="btn-danger btn-sm hidden" id="clearAssignmentImageBtn" onclick="clearAssignmentImage()" style="margin-top:8px;">🗑️ Xóa ảnh</button>
+
+      <div id="genericImageBlock">
+        <label>Ảnh đề bài (tùy chọn — VD ảnh 2 bức tranh cần so sánh, danh sách từ vựng, hoặc ảnh Cue Card)</label>
+        <label class="file-input-label" id="assignmentImageLabel" for="assignmentImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây</label>
+        <input type="file" id="assignmentImageInput" accept="image/*" onchange="onAssignmentImageSelected()">
+        <button class="btn-danger btn-sm hidden" id="clearAssignmentImageBtn" onclick="clearAssignmentImage()" style="margin-top:8px;">🗑️ Xóa ảnh</button>
+      </div>
+      <p class="muted hidden" id="genericImageToggleNote" style="margin-top:8px;">
+        Với bài Đọc hiểu/Nghe hiểu, ô "Ảnh đề bài" phía trên <b>khác</b> với ô "Tự động tạo câu hỏi từ ảnh" ở trên —
+        đây chỉ dùng khi cần thêm 1 ảnh minh hoạ khác ngoài nội dung bài đọc (ví dụ ảnh sơ đồ, hình vẽ). Không cần tải lại ảnh đề bài gốc vào đây,
+        vì nội dung bài đọc đã hiển thị dạng chữ cho học sinh rồi — tải lại ảnh đề gốc vào đây sẽ khiến học sinh thấy cả ảnh lẫn chữ trùng nhau.
+        <button type="button" class="btn-secondary btn-sm" id="genericImageToggleBtn" onclick="toggleGenericImageBlock()" style="margin-top:6px;">+ Thêm ảnh minh hoạ khác</button>
+      </p>
+
       <div id="addAssignmentMsgArea" style="margin-top:10px;"></div>
       <button class="btn-primary" id="createAssignmentBtn" style="margin-top:14px;" onclick="addAssignment()">+ Tạo bài giao</button>
     </div>
 
     <div class="card">
       <h2>Danh sách bài giao</h2>
+
       <div id="assignmentsListBox"></div>
     </div>
   </div>
@@ -1201,6 +1212,17 @@ function onAssignmentTypeChange() {
   comprehensionBlock.classList.toggle('hidden', !isComprehension);
   listeningAudioBlock.classList.toggle('hidden', type !== 'listening');
 
+  var genericImageBlock = document.getElementById('genericImageBlock');
+  var genericImageToggleNote = document.getElementById('genericImageToggleNote');
+  if (isComprehension) {
+    // an mac dinh, tranh nham voi anh OCR ben tren va tranh hoc sinh thay ca anh lan chu trung nhau
+    if (!selectedAssignmentImage) genericImageBlock.classList.add('hidden');
+    genericImageToggleNote.classList.remove('hidden');
+  } else {
+    genericImageBlock.classList.remove('hidden');
+    genericImageToggleNote.classList.add('hidden');
+  }
+
   if (type === 'ielts_part2') {
     topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
     descHint.textContent = '(gợi ý/bullet points như thẻ Cue Card thật, VD: You should say: where you went / who you went with / what you did...)';
@@ -1217,6 +1239,11 @@ function onAssignmentTypeChange() {
     topicHint.textContent = '(VD: So sánh 2 bức tranh Unit 2 - Playtime)';
     descHint.textContent = '(tùy chọn)';
   }
+}
+
+function toggleGenericImageBlock() {
+  document.getElementById('genericImageBlock').classList.remove('hidden');
+  document.getElementById('genericImageToggleNote').classList.add('hidden');
 }
 
 function onAssignmentImageSelected() {
@@ -1385,6 +1412,27 @@ function clearQuestionImage() {
   showToast('Đã xóa ảnh đề + câu hỏi');
 }
 
+// Bo so thu tu/nhan chu dư thừa o dau cau hoi hoac dap an, dung chung cho ca
+// luong OCR tu anh (extractQuestionsFromImage) va luong dan text (parseMultipleChoiceText),
+// de tranh hien thi kieu "Câu 1: 1. ..." hoac "A. a. Birds"
+function sanitizeQuestionText(text) {
+  if (!text) return '';
+  var t = String(text).trim();
+  t = t.replace(/^\s*(?:câu|cau|question)?\s*\d{1,2}\s*[\.\):]\s*/i, '');
+  return t.trim();
+}
+function sanitizeOptionText(text) {
+  if (!text) return '';
+  var t = String(text).trim();
+  // bo tien to dang "a.", "A)", "a:" o dau (co the lap lai nhieu lan neu OCR bi loi)
+  var prev;
+  do {
+    prev = t;
+    t = t.replace(/^\s*[A-Da-d]\s*[\.\):]\s*/, '');
+  } while (t !== prev);
+  return t.trim();
+}
+
 function addQuestionRow() {
   currentQuestionsDraft.push({
     question_type: 'multiple_choice',
@@ -1535,15 +1583,14 @@ function parseMultipleChoiceText(raw) {
           markedCorrect = true;
           optText = optText.replace(/(\*\*|\*|\[đúng\]|\[dung\]|\[correct\])\s*$/i, '').trim();
         }
-        options[letter] = optText;
+        options[letter] = sanitizeOptionText(optText);
         if (markedCorrect) correct = letter;
         continue;
       }
 
       if (!seenOption) {
         // dong cau hoi, bo so thu tu dau dong kieu "1." "Câu 1:" "Question 2)"
-        var cleaned = line.replace(/^\s*(?:câu|cau|question)?\s*\d{1,2}\s*[\.\):]\s*/i, '');
-        questionLines.push(cleaned);
+        questionLines.push(sanitizeQuestionText(line));
       }
     }
 
@@ -1598,8 +1645,8 @@ function extractQuestionsFromImage() {
           var q = data.questions[i];
           currentQuestionsDraft.push({
             question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
-            question_text: q.question_text || '',
-            option_a: q.option_a || '', option_b: q.option_b || '', option_c: q.option_c || '', option_d: q.option_d || '',
+            question_text: sanitizeQuestionText(q.question_text || ''),
+            option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
             correct_option: q.correct_option || 'a',
             correct_answer_text: q.correct_answer_text || '',
             explanation: ''
