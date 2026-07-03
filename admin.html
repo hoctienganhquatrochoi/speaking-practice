@@ -1268,6 +1268,8 @@ function setAssignmentImageFile(file) {
     label.textContent = '✅ ' + (file.name || 'ảnh đã dán');
     label.classList.add('has-file');
     clearBtn.classList.remove('hidden');
+    var genericBlock = document.getElementById('genericImageBlock');
+    if (genericBlock && genericBlock.classList.contains('hidden')) { toggleGenericImageBlock(); }
   } else {
     selectedAssignmentImage = null;
     label.textContent = '🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh vào đây';
@@ -1283,15 +1285,21 @@ function clearAssignmentImage() {
 }
 
 // Dán ảnh bằng Ctrl+V (tự nhận biết dán vào ô "Ảnh đề bài" hay ô "Tự động tạo câu hỏi từ ảnh"
-// tùy theo ô nào được rê chuột/focus gần nhất; mặc định ưu tiên ô câu hỏi khi đang mở loại bài đọc hiểu/nghe hiểu)
+// tùy theo ô nào được rê chuột/focus gần nhất; mặc định dán vào ô câu hỏi (OCR) khi đang mở
+// loại bài đọc hiểu/nghe hiểu, kể cả khi đang bấm vào ô "Nội dung bài đọc dạng text")
 var lastHoveredPasteZone = 'assignment';
 (function setupPasteZoneTracking() {
   function bind() {
     var qLabel = document.getElementById('questionImageLabel');
     var aLabel = document.getElementById('assignmentImageLabel');
+    var passageInput = document.getElementById('newAssignmentPassageText');
     if (qLabel) {
       qLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'question'; });
       qLabel.addEventListener('focus', function () { lastHoveredPasteZone = 'question'; });
+    }
+    if (passageInput) {
+      passageInput.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'assignment'; });
+      passageInput.addEventListener('focus', function () { lastHoveredPasteZone = 'assignment'; });
     }
     if (aLabel) {
       aLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'assignment'; });
@@ -1321,9 +1329,8 @@ document.addEventListener('paste', function(e) {
   if (!imageFile) return;
 
   var comprehensionVisible = !document.getElementById('comprehensionBlock').classList.contains('hidden');
-  var targetZone = (comprehensionVisible && lastHoveredPasteZone === 'question') ? 'question' : 'assignment';
-  // neu dang o dang bai doc hieu/nghe hieu va chua tung rê chuột vao o nao, uu tien dan vao o cau hoi (hay dung hon)
-  if (comprehensionVisible && lastHoveredPasteZone !== 'assignment' && !selectedAssignmentImage) targetZone = 'question';
+  // Voi bai Doc hieu/Nghe hieu: mac dinh dan vao o OCR (cau hoi), tru khi dang bam dung vao o "Anh de bai" chung
+  var targetZone = comprehensionVisible ? (lastHoveredPasteZone === 'assignment' ? 'assignment' : 'question') : 'assignment';
 
   if (targetZone === 'question') {
     setQuestionImageFile(imageFile);
