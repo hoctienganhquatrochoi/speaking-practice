@@ -1936,10 +1936,11 @@ function loadAssignmentsForAudience(audience) {
         if (!r.sp_assignments) continue;
         var aid = r.assignment_id;
         if (!grouped[aid]) {
-          grouped[aid] = Object.assign({}, r.sp_assignments, { _classNames: [] });
+          grouped[aid] = Object.assign({}, r.sp_assignments, { _classNames: [], _classIds: [] });
           order.push(aid);
         }
         if (r.sp_classes && r.sp_classes.name) grouped[aid]._classNames.push(r.sp_classes.name);
+        grouped[aid]._classIds.push(r.class_id);
       }
       var list = [];
       for (var j = 0; j < order.length; j++) list.push(grouped[order[j]]);
@@ -1981,6 +1982,8 @@ function renderAssignmentsList() {
     html += '<label class="muted" style="margin:0;">Hạn nộp:</label>';
     html += '<input type="date" value="' + (a.due_date || '') + '" onchange="updateAssignmentDueDate(\'' + a.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
     html += '</div>';
+    html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="toggleEditExclusions(\'' + a.id + '\', this)">👥 Sửa học sinh được làm bài (VD học sinh đi học muộn)</button>';
+    html += '<div id="exclusionsEditor_' + a.id + '" class="hidden" style="margin-top:8px;padding:10px;background:#0f1420;border-radius:8px;"></div>';
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;white-space:pre-wrap;">Bài đọc mẫu:\n"' + escapeHtml(a.reading_text) + '"</div>';
     if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
@@ -2004,6 +2007,74 @@ function renderAssignmentsList() {
     html += '</div>';
   }
   box.innerHTML = html;
+}
+
+function toggleEditExclusions(assignmentId, btn) {
+  var box = document.getElementById('exclusionsEditor_' + assignmentId);
+  if (!box) return;
+  var willShow = box.classList.contains('hidden');
+  box.classList.toggle('hidden');
+  if (!willShow) return;
+
+  var assignment = null;
+  for (var i = 0; i < currentAssignmentsList.length; i++) {
+    if (currentAssignmentsList[i].id === assignmentId) { assignment = currentAssignmentsList[i]; break; }
+  }
+  var classIds = (assignment && assignment._classIds) || [];
+  if (classIds.length === 0) { box.innerHTML = '<p class="muted">Không tìm thấy lớp của bài giao này</p>'; return; }
+
+  box.innerHTML = '<p class="muted">Đang tải danh sách học sinh...</p>';
+
+  Promise.all([
+    supabaseClient.from('sp_students').select('id, name').in('class_id', classIds).order('name', { ascending: true }),
+    supabaseClient.from('sp_assignment_excluded_students').select('student_id').eq('assignment_id', assignmentId)
+  ]).then(function(results) {
+    var studentsRes = results[0];
+    var excludedRes = results[1];
+    if (studentsRes.error) { box.innerHTML = '<p class="muted">Lỗi tải học sinh: ' + escapeHtml(studentsRes.error.message) + '</p>'; return; }
+    var students = studentsRes.data || [];
+    var excludedIds = {};
+    (excludedRes.data || []).forEach(function(row) { excludedIds[row.student_id] = true; });
+
+    var html = '<p class="muted" style="margin:0 0 8px 0;">Bỏ tích = học sinh không làm được bài này. Tích lại (VD học sinh đi học muộn) để mở lại.</p>';
+    for (var i = 0; i < students.length; i++) {
+      var s = students[i];
+      var isChecked = !excludedIds[s.id];
+      html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;cursor:pointer;">';
+      html += '<input type="checkbox" class="exclusion-edit-checkbox" data-student-id="' + s.id + '"' + (isChecked ? ' checked' : '') + ' style="width:auto;">';
+      html += '<span>' + escapeHtml(s.name) + '</span>';
+      html += '</label>';
+    }
+    html += '<button class="btn-primary btn-sm" style="margin-top:8px;" onclick="saveExclusions(\'' + assignmentId + '\', this)">💾 Lưu thay đổi</button>';
+    box.innerHTML = html;
+  });
+}
+
+function saveExclusions(assignmentId, btn) {
+  var box = document.getElementById('exclusionsEditor_' + assignmentId);
+  var checkboxes = box.querySelectorAll('.exclusion-edit-checkbox');
+  var excludedIds = [];
+  for (var i = 0; i < checkboxes.length; i++) {
+    if (!checkboxes[i].checked) excludedIds.push(checkboxes[i].getAttribute('data-student-id'));
+  }
+  btn.disabled = true;
+  btn.textContent = 'Đang lưu...';
+
+  supabaseClient.from('sp_assignment_excluded_students').delete().eq('assignment_id', assignmentId)
+    .then(function() {
+      if (excludedIds.length === 0) return { error: null };
+      var rows = excludedIds.map(function(sid) { return { assignment_id: assignmentId, student_id: sid }; });
+      return supabaseClient.from('sp_assignment_excluded_students').insert(rows);
+    }).then(function(res) {
+      btn.disabled = false;
+      btn.textContent = '💾 Lưu thay đổi';
+      if (res && res.error) { showToast('Lỗi lưu: ' + res.error.message); return; }
+      showToast('Đã cập nhật danh sách học sinh được làm bài');
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = '💾 Lưu thay đổi';
+      showToast('Lỗi: ' + String(err));
+    });
 }
 
 function viewAssignmentQuestions(assignmentId, btn) {
