@@ -545,6 +545,12 @@ function saveNewAdminPassword() {
 // =====================================================
 // TABS
 // =====================================================
+function todayDateStr() {
+  var d = new Date();
+  var p = function(n) { return n < 10 ? '0' + n : '' + n; };
+  return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear();
+}
+
 function switchTab(tab) {
   var classesTab = document.getElementById('tabClasses');
   var studentsTab = document.getElementById('tabStudents');
@@ -574,6 +580,8 @@ function switchTab(tab) {
   } else if (tab === 'assignments') {
     assignmentsTab.classList.remove('hidden');
     btnAssignments.classList.add('active');
+    var topicInput = document.getElementById('newAssignmentTopic');
+    if (topicInput && !topicInput.value.trim()) { topicInput.value = todayDateStr() + ' - '; }
     loadClassesForAssignments();
   } else if (tab === 'results') {
     resultsTab.classList.remove('hidden');
@@ -1893,7 +1901,7 @@ function addAssignment() {
     createBtn.disabled = false;
     createBtn.textContent = '+ Tạo bài giao';
     showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp' + (excludedStudentIds.length > 0 ? ', loại trừ ' + excludedStudentIds.length + ' học sinh' : ''));
-    document.getElementById('newAssignmentTopic').value = '';
+    document.getElementById('newAssignmentTopic').value = todayDateStr() + ' - ';
     document.getElementById('newAssignmentDescription').value = '';
     document.getElementById('newAssignmentDueDate').value = '';
     document.getElementById('newAssignmentReadingText').value = '';
@@ -2129,14 +2137,23 @@ function updateAssignmentDueDate(assignmentId, newDate) {
 }
 
 function deleteAssignment(id) {
-  if (!confirm('Xóa bài giao này?')) return;
-  supabaseClient.from('sp_assignments').delete().eq('id', id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      showToast('Đã xóa bài giao');
-      var audience = document.getElementById('assignmentAudienceSelect').value;
-      loadAssignmentsForAudience(audience);
-    });
+  if (!confirm('Xóa bài giao này? Bài học sinh đã nộp liên quan (nếu có) cũng sẽ bị xóa theo, không khôi phục được.')) return;
+  Promise.all([
+    supabaseClient.from('sp_submissions').delete().eq('assignment_id', id),
+    supabaseClient.from('sp_comprehension_submissions').delete().eq('assignment_id', id),
+    supabaseClient.from('sp_comprehension_questions').delete().eq('assignment_id', id),
+    supabaseClient.from('sp_assignment_classes').delete().eq('assignment_id', id),
+    supabaseClient.from('sp_assignment_excluded_students').delete().eq('assignment_id', id)
+  ]).then(function() {
+    return supabaseClient.from('sp_assignments').delete().eq('id', id);
+  }).then(function(res) {
+    if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+    showToast('Đã xóa bài giao và bài nộp liên quan');
+    var audience = document.getElementById('assignmentAudienceSelect').value;
+    loadAssignmentsForAudience(audience);
+  }).catch(function(err) {
+    showToast('Lỗi: ' + String(err));
+  });
 }
 
 // =====================================================
