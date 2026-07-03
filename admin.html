@@ -1435,6 +1435,7 @@ function addQuestionRow() {
     question_type: 'multiple_choice',
     question_text: '',
     option_a: '', option_b: '', option_c: '', option_d: '',
+    option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '',
     correct_option: 'a',
     correct_answer_text: '',
     explanation: ''
@@ -1454,6 +1455,55 @@ function updateQuestionField(index, field, value) {
 function onQuestionTypeChange(index, value) {
   currentQuestionsDraft[index].question_type = value;
   renderQuestionsList();
+}
+
+function onOptionImageSelected(qIndex, letter, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  var statusEl = document.getElementById('optImgStatus_' + qIndex + '_' + letter);
+  if (statusEl) statusEl.textContent = 'Đang tải ảnh lên...';
+  var ext = (file.name && file.name.split('.').pop()) || 'png';
+  var path = 'comprehension-options/' + Date.now() + '_' + letter + '.' + ext;
+  supabaseClient.storage.from('assignment-images').upload(path, file)
+    .then(function(uploadRes) {
+      if (uploadRes.error) {
+        showToast('Lỗi tải ảnh: ' + uploadRes.error.message);
+        renderQuestionsList();
+        return;
+      }
+      var urlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(path);
+      if (currentQuestionsDraft[qIndex]) {
+        currentQuestionsDraft[qIndex]['option_' + letter + '_image_url'] = urlRes.data.publicUrl;
+      }
+      renderQuestionsList();
+    });
+}
+
+function removeOptionImage(qIndex, letter) {
+  if (currentQuestionsDraft[qIndex]) {
+    currentQuestionsDraft[qIndex]['option_' + letter + '_image_url'] = '';
+  }
+  renderQuestionsList();
+}
+
+function buildOptionEditorHtml(qIndex, letter, labelText) {
+  var q = currentQuestionsDraft[qIndex];
+  var textVal = q['option_' + letter] || '';
+  var imgUrl = q['option_' + letter + '_image_url'] || '';
+  var html = '<div class="grow" style="min-width:180px;">';
+  html += '<label>' + labelText + '</label>';
+  html += '<input type="text" value="' + escapeHtml(textVal) + '" oninput="updateQuestionField(' + qIndex + ',\'option_' + letter + '\',this.value)" placeholder="Nhãn chữ (có thể để trống nếu dùng ảnh)">';
+  html += '<div class="row" style="margin-top:6px;gap:8px;align-items:center;">';
+  html += '<input type="file" accept="image/*" id="optImgInput_' + qIndex + '_' + letter + '" class="hidden" onchange="onOptionImageSelected(' + qIndex + ',\'' + letter + '\',this)">';
+  html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'optImgInput_' + qIndex + '_' + letter + '\').click()">🖼️ ' + (imgUrl ? 'Đổi ảnh' : '+ Ảnh') + '</button>';
+  if (imgUrl) {
+    html += '<img src="' + imgUrl + '" style="height:44px;border-radius:6px;">';
+    html += '<button type="button" class="btn-danger btn-sm" onclick="removeOptionImage(' + qIndex + ',\'' + letter + '\')">Xóa ảnh</button>';
+  }
+  html += '<span class="muted" id="optImgStatus_' + qIndex + '_' + letter + '"></span>';
+  html += '</div>';
+  html += '</div>';
+  return html;
 }
 
 function renderQuestionsList() {
@@ -1481,13 +1531,14 @@ function renderQuestionsList() {
     html += '<input type="text" value="' + escapeHtml(q.question_text) + '" oninput="updateQuestionField(' + i + ',\'question_text\',this.value)" placeholder="VD: What is the name of the kitten?">';
 
     if (q.question_type === 'multiple_choice') {
+      html += '<p class="muted" style="margin-top:8px;">Mỗi đáp án có thể dùng chữ, ảnh, hoặc cả hai — hợp cho bài nghe hiểu cần hình ảnh màu sắc/vị trí.</p>';
       html += '<div class="row" style="margin-top:8px;">';
-      html += '<div class="grow"><label>Đáp án A</label><input type="text" value="' + escapeHtml(q.option_a) + '" oninput="updateQuestionField(' + i + ',\'option_a\',this.value)"></div>';
-      html += '<div class="grow"><label>Đáp án B</label><input type="text" value="' + escapeHtml(q.option_b) + '" oninput="updateQuestionField(' + i + ',\'option_b\',this.value)"></div>';
+      html += buildOptionEditorHtml(i, 'a', 'Đáp án A');
+      html += buildOptionEditorHtml(i, 'b', 'Đáp án B');
       html += '</div>';
       html += '<div class="row">';
-      html += '<div class="grow"><label>Đáp án C (tùy chọn)</label><input type="text" value="' + escapeHtml(q.option_c) + '" oninput="updateQuestionField(' + i + ',\'option_c\',this.value)"></div>';
-      html += '<div class="grow"><label>Đáp án D (tùy chọn)</label><input type="text" value="' + escapeHtml(q.option_d) + '" oninput="updateQuestionField(' + i + ',\'option_d\',this.value)"></div>';
+      html += buildOptionEditorHtml(i, 'c', 'Đáp án C (tùy chọn)');
+      html += buildOptionEditorHtml(i, 'd', 'Đáp án D (tùy chọn)');
       html += '</div>';
       html += '<label>Đáp án đúng</label>';
       html += '<select onchange="updateQuestionField(' + i + ',\'correct_option\',this.value)">';
@@ -1639,6 +1690,7 @@ function parseOneQuestionChunk(chunkRaw) {
       question_type: 'multiple_choice',
       question_text: sanitizeQuestionText(questionText),
       option_a: options.a || '', option_b: options.b || '', option_c: options.c || '', option_d: options.d || '',
+      option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '',
       correct_option: correctLetter || 'a',
       correct_answer_text: '',
       explanation: explanation
@@ -1651,6 +1703,7 @@ function parseOneQuestionChunk(chunkRaw) {
       question_type: 'multiple_choice',
       question_text: sanitizeQuestionText(questionText),
       option_a: 'True', option_b: 'False', option_c: '', option_d: '',
+      option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '',
       correct_option: correctBool ? 'a' : 'b',
       correct_answer_text: '',
       explanation: explanation
@@ -1662,6 +1715,7 @@ function parseOneQuestionChunk(chunkRaw) {
     question_type: 'typed',
     question_text: sanitizeQuestionText(questionText),
     option_a: '', option_b: '', option_c: '', option_d: '',
+    option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '',
     correct_option: 'a',
     correct_answer_text: answerFullText,
     explanation: explanation
@@ -1702,6 +1756,7 @@ function extractQuestionsFromImage() {
             question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
             question_text: sanitizeQuestionText(q.question_text || ''),
             option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
+            option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '',
             correct_option: q.correct_option || 'a',
             correct_answer_text: q.correct_answer_text || '',
             explanation: ''
@@ -1755,8 +1810,11 @@ function addAssignment() {
     validQuestions = currentQuestionsDraft.filter(function(q) { return q.question_text.trim(); });
     if (validQuestions.length === 0) { showToast('Cần ít nhất 1 câu hỏi có nội dung'); return; }
     for (var vq = 0; vq < validQuestions.length; vq++) {
-      if (validQuestions[vq].question_type === 'multiple_choice' && !validQuestions[vq].option_a.trim() && !validQuestions[vq].option_b.trim()) {
-        showToast('Câu trắc nghiệm cần ít nhất đáp án A và B'); return;
+      var vqQ = validQuestions[vq];
+      var aHasContent = (vqQ.option_a && vqQ.option_a.trim()) || vqQ.option_a_image_url;
+      var bHasContent = (vqQ.option_b && vqQ.option_b.trim()) || vqQ.option_b_image_url;
+      if (vqQ.question_type === 'multiple_choice' && !aHasContent && !bHasContent) {
+        showToast('Câu trắc nghiệm cần ít nhất đáp án A và B (chữ hoặc ảnh)'); return;
       }
     }
   }
@@ -1793,6 +1851,10 @@ function addAssignment() {
         option_b: q.option_b || null,
         option_c: q.option_c || null,
         option_d: q.option_d || null,
+        option_a_image_url: q.option_a_image_url || null,
+        option_b_image_url: q.option_b_image_url || null,
+        option_c_image_url: q.option_c_image_url || null,
+        option_d_image_url: q.option_d_image_url || null,
         correct_option: q.question_type === 'multiple_choice' ? q.correct_option : null,
         correct_answer_text: q.question_type === 'typed' ? q.correct_answer_text : null,
         explanation: q.explanation || null
@@ -2036,9 +2098,18 @@ function viewAssignmentQuestions(assignmentId, btn) {
         html += '<div style="border-top:1px solid #232b45;padding-top:8px;margin-top:8px;font-size:14px;">';
         html += '<b>Câu ' + (i + 1) + ':</b> ' + escapeHtml(q.question_text) + '<br>';
         if (q.question_type === 'multiple_choice') {
-          html += 'A. ' + escapeHtml(q.option_a || '') + ' | B. ' + escapeHtml(q.option_b || '');
-          if (q.option_c) html += ' | C. ' + escapeHtml(q.option_c);
-          if (q.option_d) html += ' | D. ' + escapeHtml(q.option_d);
+          var letters = ['a', 'b', 'c', 'd'];
+          var labels = ['A', 'B', 'C', 'D'];
+          for (var li = 0; li < letters.length; li++) {
+            var letter = letters[li];
+            var optText = q['option_' + letter];
+            var optImg = q['option_' + letter + '_image_url'];
+            if (!optText && !optImg) continue;
+            html += labels[li] + '. ';
+            if (optImg) html += '<img src="' + optImg + '" style="height:36px;vertical-align:middle;border-radius:4px;margin:0 4px;">';
+            if (optText) html += escapeHtml(optText);
+            html += '&nbsp;&nbsp;';
+          }
           html += '<br><span class="muted">Đáp án đúng: ' + (q.correct_option || '').toUpperCase() + '</span>';
         } else {
           html += '<span class="muted">Đáp án tham khảo: ' + escapeHtml(q.correct_answer_text || '') + '</span>';
