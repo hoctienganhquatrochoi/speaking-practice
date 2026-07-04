@@ -1255,32 +1255,21 @@ function clearAssignmentImage() {
 }
 
 // Dán ảnh bằng Ctrl+V (tự nhận biết dán vào ô "Ảnh đề bài" hay ô "Tự động tạo câu hỏi từ ảnh"
-// tùy theo ô nào được rê chuột/focus gần nhất; mặc định dán vào ô câu hỏi (OCR) khi đang mở
-// loại bài đọc hiểu/nghe hiểu, kể cả khi đang bấm vào ô "Nội dung bài đọc dạng text")
-var lastHoveredPasteZone = 'assignment';
+// tùy theo ô nào được rê chuột/focus gần nhất; ho tro ca cac o rieng cua tung Phan
+// (dung delegation vi cac o Phan duoc ve lai dong, khong the gan listener 1 lan)
+var lastPasteTarget = { type: 'assignment' };
 (function setupPasteZoneTracking() {
-  function bind() {
-    var qLabel = document.getElementById('questionImageLabel');
-    var aLabel = document.getElementById('assignmentImageLabel');
-    var passageInput = document.getElementById('newAssignmentPassageText');
-    if (qLabel) {
-      qLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'question'; });
-      qLabel.addEventListener('focus', function () { lastHoveredPasteZone = 'question'; });
-    }
-    if (passageInput) {
-      passageInput.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'assignment'; });
-      passageInput.addEventListener('focus', function () { lastHoveredPasteZone = 'assignment'; });
-    }
-    if (aLabel) {
-      aLabel.addEventListener('mouseenter', function () { lastHoveredPasteZone = 'assignment'; });
-      aLabel.addEventListener('focus', function () { lastHoveredPasteZone = 'assignment'; });
-    }
+  function updateFromElement(el) {
+    if (!el || !el.closest) return;
+    var sectionImgZone = el.closest('[data-section-image-zone]');
+    if (sectionImgZone) { lastPasteTarget = { type: 'section-image', index: parseInt(sectionImgZone.getAttribute('data-section-image-zone'), 10) }; return; }
+    var sectionAudioZone = el.closest('[data-section-audio-zone]');
+    if (sectionAudioZone) { lastPasteTarget = { type: 'section-audio', index: parseInt(sectionAudioZone.getAttribute('data-section-audio-zone'), 10) }; return; }
+    if (el.id === 'questionImageLabel' || el.closest('#questionImageLabel')) { lastPasteTarget = { type: 'question' }; return; }
+    if (el.id === 'assignmentImageLabel' || el.closest('#assignmentImageLabel') || el.id === 'newAssignmentPassageText') { lastPasteTarget = { type: 'assignment' }; return; }
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bind);
-  } else {
-    bind();
-  }
+  document.addEventListener('mouseover', function(e) { updateFromElement(e.target); }, true);
+  document.addEventListener('focusin', function(e) { updateFromElement(e.target); }, true);
 })();
 
 document.addEventListener('paste', function(e) {
@@ -1299,8 +1288,18 @@ document.addEventListener('paste', function(e) {
   if (!imageFile) return;
 
   var comprehensionVisible = !document.getElementById('comprehensionBlock').classList.contains('hidden');
-  // Voi bai Doc hieu/Nghe hieu: mac dinh dan vao o OCR (cau hoi), tru khi dang bam dung vao o "Anh de bai" chung
-  var targetZone = comprehensionVisible ? (lastHoveredPasteZone === 'assignment' ? 'assignment' : 'question') : 'assignment';
+
+  if (comprehensionVisible && lastPasteTarget.type === 'section-image' && currentSectionsDraft[lastPasteTarget.index]) {
+    uploadSectionImageFile(lastPasteTarget.index, imageFile);
+    showToast('Đã dán ảnh vào Phần ' + (lastPasteTarget.index + 1));
+    return;
+  }
+  if (comprehensionVisible && lastPasteTarget.type === 'section-audio' && currentSectionsDraft[lastPasteTarget.index]) {
+    showToast('Ô âm thanh chỉ nhận file âm thanh, không nhận ảnh — dán ảnh vào ô "🖼️ Ảnh riêng cho phần này" nhé.');
+    return;
+  }
+
+  var targetZone = comprehensionVisible ? (lastPasteTarget.type === 'assignment' ? 'assignment' : 'question') : 'assignment';
 
   if (targetZone === 'question') {
     setQuestionImageFile(imageFile);
@@ -1313,7 +1312,7 @@ document.addEventListener('paste', function(e) {
 
 // Kéo thả ảnh vào ô chọn ảnh
 (function setupAssignmentDragDrop() {
-  function bindOne(labelId, setFn) {
+  function bindStatic(labelId, setFn) {
     var label = document.getElementById(labelId);
     if (!label) return;
     label.addEventListener('dragover', function(e) {
@@ -1332,53 +1331,33 @@ document.addEventListener('paste', function(e) {
     });
   }
   function bind() {
-    bindOne('assignmentImageLabel', setAssignmentImageFile);
-    bindOne('questionImageLabel', setQuestionImageFile);
-
-    // Gan truc tiep dan (paste) va keo-tha (drag-drop) anh vao chinh o textarea "Noi dung bai doc dang text",
-    // khong phu thuoc vao co che dan theo vi tri chuot/focus chung (chac chan hon tren moi trinh duyet)
-    var passageInput = document.getElementById('newAssignmentPassageText');
-    if (passageInput) {
-      passageInput.addEventListener('paste', function(e) {
-        if (!e.clipboardData || !e.clipboardData.items) return;
-        for (var i = 0; i < e.clipboardData.items.length; i++) {
-          var item = e.clipboardData.items[i];
-          if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
-            var file = item.getAsFile();
-            if (file) {
-              e.preventDefault();
-              setAssignmentImageFile(file);
-              showToast('Đã dán ảnh vào ô "Ảnh đề bài"');
-            }
-            break;
-          }
-        }
-      });
-      passageInput.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        passageInput.style.borderColor = '#4c6fff';
-      });
-      passageInput.addEventListener('dragleave', function(e) {
-        passageInput.style.borderColor = '';
-      });
-      passageInput.addEventListener('drop', function(e) {
-        e.preventDefault();
-        passageInput.style.borderColor = '';
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          var f = e.dataTransfer.files[0];
-          if (f.type && f.type.indexOf('image/') === 0) {
-            setAssignmentImageFile(f);
-            showToast('Đã thả ảnh vào ô "Ảnh đề bài"');
-          }
-        }
-      });
-    }
+    bindStatic('assignmentImageLabel', setAssignmentImageFile);
+    bindStatic('questionImageLabel', setQuestionImageFile);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bind);
   } else {
     bind();
   }
+
+  // Keo-tha anh truc tiep vao dung o cua tung Phan (dung delegation vi cac o nay duoc ve lai dong)
+  document.addEventListener('dragover', function(e) {
+    if (e.target && e.target.closest && (e.target.closest('[data-section-image-zone]'))) {
+      e.preventDefault();
+    }
+  });
+  document.addEventListener('drop', function(e) {
+    var zone = e.target && e.target.closest ? e.target.closest('[data-section-image-zone]') : null;
+    if (!zone) return;
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      var sIndex = parseInt(zone.getAttribute('data-section-image-zone'), 10);
+      if (currentSectionsDraft[sIndex]) {
+        uploadSectionImageFile(sIndex, e.dataTransfer.files[0]);
+        showToast('Đã thả ảnh vào Phần ' + (sIndex + 1));
+      }
+    }
+  });
 })();
 
 // =====================================================
@@ -1507,6 +1486,10 @@ function updateSectionField(sIndex, field, value) {
 function onSectionAudioSelected(sIndex, inputEl) {
   var file = inputEl.files && inputEl.files[0];
   if (!file) return;
+  uploadSectionAudioFile(sIndex, file);
+}
+
+function uploadSectionAudioFile(sIndex, file) {
   var statusEl = document.getElementById('sectionAudioStatus_' + sIndex);
   if (statusEl) statusEl.textContent = 'Đang tải lên...';
   var ext = (file.name && file.name.split('.').pop()) || 'mp3';
@@ -1527,6 +1510,10 @@ function removeSectionAudio(sIndex) {
 function onSectionImageSelected(sIndex, inputEl) {
   var file = inputEl.files && inputEl.files[0];
   if (!file) return;
+  uploadSectionImageFile(sIndex, file);
+}
+
+function uploadSectionImageFile(sIndex, file) {
   var ext = (file.name && file.name.split('.').pop()) || 'png';
   var path = 'sections/' + Date.now() + '_' + sIndex + '.' + ext;
   supabaseClient.storage.from('assignment-images').upload(path, file).then(function(res) {
@@ -1617,20 +1604,20 @@ function renderSectionsList() {
     html += '</div>';
 
     html += '<div class="row" style="margin-top:10px;align-items:flex-start;">';
-    html += '<div class="grow">';
+    html += '<div class="grow" data-section-audio-zone="' + s + '">';
     html += '<label>🎵 Âm thanh riêng cho phần này (nếu là bài nghe)</label>';
     html += '<input type="file" accept="audio/*" id="sectionAudioInput_' + s + '" class="hidden" onchange="onSectionAudioSelected(' + s + ', this)">';
-    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionAudioInput_' + s + '\').click()">' + (sec.audio_url ? '🎵 Đổi âm thanh' : '+ Chọn file âm thanh') + '</button>';
+    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionAudioInput_' + s + '\').click()">' + (sec.audio_url ? '🎵 Đổi âm thanh' : '+ Chọn file âm thanh (hoặc dán/Ctrl+V vào đây)') + '</button>';
     html += ' <span class="muted" id="sectionAudioStatus_' + s + '"></span>';
     if (sec.audio_url) {
       html += ' <button type="button" class="btn-danger btn-sm" onclick="removeSectionAudio(' + s + ')">Xóa</button>';
       html += '<audio controls src="' + sec.audio_url + '" style="display:block;width:100%;margin-top:6px;"></audio>';
     }
     html += '</div>';
-    html += '<div class="grow">';
+    html += '<div class="grow" data-section-image-zone="' + s + '">';
     html += '<label>🖼️ Ảnh riêng cho phần này (để học sinh nhìn ngay, VD tranh nối, màu sắc)</label>';
     html += '<input type="file" accept="image/*" id="sectionImageInput_' + s + '" class="hidden" onchange="onSectionImageSelected(' + s + ', this)">';
-    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionImageInput_' + s + '\').click()">' + (sec.image_url ? '🖼️ Đổi ảnh' : '+ Chọn ảnh') + '</button>';
+    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionImageInput_' + s + '\').click()">' + (sec.image_url ? '🖼️ Đổi ảnh' : '+ Chọn ảnh (hoặc dán/Ctrl+V vào đây)') + '</button>';
     if (sec.image_url) {
       html += ' <button type="button" class="btn-danger btn-sm" onclick="removeSectionImage(' + s + ')">Xóa</button>';
       html += '<img src="' + sec.image_url + '" style="display:block;max-width:100%;max-height:160px;margin-top:6px;border-radius:8px;">';
