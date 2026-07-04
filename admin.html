@@ -2176,7 +2176,7 @@ function renderAssignmentsList() {
     html += '<label class="muted" style="margin:0;">Hạn nộp:</label>';
     html += '<input type="date" value="' + (a.due_date || '') + '" onchange="updateAssignmentDueDate(\'' + a.id + '\', this.value)" style="width:auto;padding:6px 8px;">';
     html += '</div>';
-    html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="toggleEditExclusions(\'' + a.id + '\', this)">👥 Sửa học sinh được làm bài (VD học sinh đi học muộn)</button>';
+    html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="toggleEditExclusions(\'' + a.id + '\', this)">👥 Sửa học sinh nghỉ học / không làm bài (VD học sinh đi học muộn quay lại)</button>';
     html += '<div id="exclusionsEditor_' + a.id + '" class="hidden" style="margin-top:8px;padding:10px;background:#0f1420;border-radius:8px;"></div>';
     if (a.description) html += '<div class="muted" style="margin-top:6px;">' + escapeHtml(a.description) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;white-space:pre-wrap;">Bài đọc mẫu:\n"' + escapeHtml(a.reading_text) + '"</div>';
@@ -2230,10 +2230,10 @@ function toggleEditExclusions(assignmentId, btn) {
     var excludedIds = {};
     (excludedRes.data || []).forEach(function(row) { excludedIds[row.student_id] = true; });
 
-    var html = '<p class="muted" style="margin:0 0 8px 0;">Bỏ tích = học sinh không làm được bài này. Tích lại (VD học sinh đi học muộn) để mở lại.</p>';
+    var html = '<p class="muted" style="margin:0 0 8px 0;">Tích vào học sinh nghỉ học / không làm được bài này — giống hệt lúc giao bài. Bỏ tích (VD học sinh đi học muộn quay lại) để mở lại cho làm bài.</p>';
     for (var i = 0; i < students.length; i++) {
       var s = students[i];
-      var isChecked = !excludedIds[s.id];
+      var isChecked = !!excludedIds[s.id];
       html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;cursor:pointer;">';
       html += '<input type="checkbox" class="exclusion-edit-checkbox" data-student-id="' + s.id + '"' + (isChecked ? ' checked' : '') + ' style="width:auto;">';
       html += '<span>' + escapeHtml(s.name) + '</span>';
@@ -2249,7 +2249,7 @@ function saveExclusions(assignmentId, btn) {
   var checkboxes = box.querySelectorAll('.exclusion-edit-checkbox');
   var excludedIds = [];
   for (var i = 0; i < checkboxes.length; i++) {
-    if (!checkboxes[i].checked) excludedIds.push(checkboxes[i].getAttribute('data-student-id'));
+    if (checkboxes[i].checked) excludedIds.push(checkboxes[i].getAttribute('data-student-id'));
   }
   btn.disabled = true;
   btn.textContent = 'Đang lưu...';
@@ -2263,7 +2263,7 @@ function saveExclusions(assignmentId, btn) {
       btn.disabled = false;
       btn.textContent = '💾 Lưu thay đổi';
       if (res && res.error) { showToast('Lỗi lưu: ' + res.error.message); return; }
-      showToast('Đã cập nhật danh sách học sinh được làm bài');
+      showToast('Đã cập nhật danh sách học sinh nghỉ học / không làm bài');
     }).catch(function(err) {
       btn.disabled = false;
       btn.textContent = '💾 Lưu thay đổi';
