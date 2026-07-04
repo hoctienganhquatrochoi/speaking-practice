@@ -205,9 +205,12 @@
   </div>
 
   <div class="card">
-    <h2>Nộp bài mới</h2>
+    <div class="row" style="justify-content:space-between;">
+      <h2 style="margin:0;">Nộp bài mới</h2>
+      <button class="btn-secondary btn-sm" onclick="refreshAssignmentsList()">🔄 Làm mới</button>
+    </div>
 
-    <div class="hidden" id="assignmentBlock">
+    <div class="hidden" id="assignmentBlock" style="margin-top:14px;">
       <p class="banner-title">📋 Các bài tập cần hoàn thành</p>
       <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
       <button class="btn-gradient-blue btn-sm" id="toggleFreeModeBtn" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
@@ -436,6 +439,12 @@ function saveNewPassword() {
 // =====================================================
 var submittedAssignmentIds = {};
 var useFreeMode = false;
+
+function refreshAssignmentsList() {
+  showToast('Đang làm mới danh sách bài tập...');
+  loadAssignments();
+  loadSubmissions();
+}
 
 function loadAssignments() {
   if (!currentStudent.class_id) return;
