@@ -1196,6 +1196,7 @@ var currentComprehensionSections = [];
 
 function loadComprehensionQuiz(assignment) {
   currentComprehensionAssignment = assignment;
+  sectionRecorders = {};
   document.getElementById('comprehensionResultBox').classList.add('hidden');
   document.getElementById('comprehensionResultBox').innerHTML = '';
   document.getElementById('comprehensionSectionsBox').innerHTML = '<p class="muted">Đang tải bài...</p>';
@@ -1246,12 +1247,62 @@ function renderComprehensionSections() {
     if (sec.audio_url) html += '<audio controls src="' + sec.audio_url + '" style="width:100%;margin-bottom:10px;"></audio>';
     if (sec.passage_text) html += '<p style="white-space:pre-wrap;line-height:1.8;font-size:17px;margin:0 0 12px 0;">' + escapeHtml(sec.passage_text) + '</p>';
 
+    if (sec.requires_reading_recording) {
+      html += '<div style="margin:10px 0 16px 0;padding:12px;background:#171d2e;border-radius:10px;border:1px solid #2a3350;">';
+      html += '<p style="font-weight:600;margin:0 0 8px 0;">🎙️ Đọc to đoạn văn ở trên, rồi ghi âm tại đây</p>';
+      html += '<button class="btn-primary btn-sm" id="sectionRecBtn_' + sec.id + '" onclick="toggleSectionRecording(\'' + sec.id + '\')">🎙️ Bắt đầu ghi âm</button>';
+      html += ' <span class="muted" id="sectionRecTimer_' + sec.id + '" class="hidden"></span>';
+      html += '<audio id="sectionRecPlayback_' + sec.id + '" controls class="hidden" style="display:block;width:100%;margin-top:8px;"></audio>';
+      html += '</div>';
+    }
+
     for (var qi = 0; qi < sec.questions.length; qi++) {
       html += renderOneQuestionHtml(sec.questions[qi], qi);
     }
     html += '</div>';
   }
   box.innerHTML = html;
+}
+
+var sectionRecorders = {};
+
+function toggleSectionRecording(sectionId) {
+  var existing = sectionRecorders[sectionId];
+  if (existing && existing.mediaRecorder && existing.mediaRecorder.state === 'recording') {
+    existing.mediaRecorder.stop();
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Trình duyệt này không hỗ trợ ghi âm.');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    var chunks = [];
+    var mimeType = pickRecorderMimeType();
+    var options = mimeType ? { mimeType: mimeType } : undefined;
+    var mediaRecorder;
+    try { mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream); }
+    catch (e) { mediaRecorder = new MediaRecorder(stream); }
+
+    mediaRecorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+    mediaRecorder.onstop = function() {
+      var blobType = mediaRecorder.mimeType || 'audio/webm';
+      var blob = new Blob(chunks, { type: blobType });
+      if (sectionRecorders[sectionId]) sectionRecorders[sectionId].blob = blob;
+      var audioEl = document.getElementById('sectionRecPlayback_' + sectionId);
+      if (audioEl) { audioEl.src = URL.createObjectURL(blob); audioEl.classList.remove('hidden'); }
+      var btn = document.getElementById('sectionRecBtn_' + sectionId);
+      if (btn) btn.textContent = '🔁 Ghi lại';
+      stream.getTracks().forEach(function(t) { t.stop(); });
+    };
+
+    sectionRecorders[sectionId] = { mediaRecorder: mediaRecorder, blob: null };
+    mediaRecorder.start();
+    var btn = document.getElementById('sectionRecBtn_' + sectionId);
+    if (btn) btn.textContent = '⏹️ Dừng ghi âm';
+  }).catch(function(err) {
+    showToast('Không mở được micro, kiểm tra quyền truy cập micro cho trình duyệt nhé.');
+  });
 }
 
 function renderOneQuestionHtml(q, qi) {
@@ -1319,6 +1370,18 @@ function submitComprehensionAnswers() {
   var allQuestions = getAllComprehensionQuestions();
   if (allQuestions.length === 0) { showToast('Chưa có câu hỏi để nộp'); return; }
 
+  var missingRecordingSections = [];
+  for (var s = 0; s < currentComprehensionSections.length; s++) {
+    var sec = currentComprehensionSections[s];
+    if (sec.requires_reading_recording) {
+      var rec = sectionRecorders[sec.id];
+      if (!rec || !rec.blob) missingRecordingSections.push(sec.title || 'phần đọc');
+    }
+  }
+  if (missingRecordingSections.length > 0) {
+    if (!confirm('Em chưa ghi âm phần đọc: ' + missingRecordingSections.join(', ') + '. Vẫn nộp bài chứ?')) return;
+  }
+
   var answers = [];
   for (var i = 0; i < allQuestions.length; i++) {
     var q = allQuestions[i];
@@ -1344,36 +1407,83 @@ function submitComprehensionAnswers() {
 
   var btn = document.getElementById('submitComprehensionBtn');
   btn.disabled = true;
-  btn.textContent = 'Đang chấm bài...';
+  btn.textContent = 'Đang tải bài ghi âm lên...';
 
-  supabaseClient.functions.invoke('grade-comprehension', {
-    body: { assignment_id: currentComprehensionAssignment.id, student_id: currentStudent.id, answers: answers }
-  }).then(function(res) {
-    btn.disabled = false;
-    btn.textContent = 'Nộp bài';
-    if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-    var payload = res.data;
-    if (!payload || payload.error) { showToast('Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi')); return; }
+  var recordingsToUpload = [];
+  for (var s2 = 0; s2 < currentComprehensionSections.length; s2++) {
+    var sec2 = currentComprehensionSections[s2];
+    var rec2 = sectionRecorders[sec2.id];
+    if (sec2.requires_reading_recording && rec2 && rec2.blob) {
+      recordingsToUpload.push({ section_id: sec2.id, blob: rec2.blob });
+    }
+  }
 
-    document.getElementById('comprehensionSectionsBox').classList.add('hidden');
-    btn.classList.add('hidden');
-    showComprehensionResult(payload.total_score, payload.max_score, payload.results);
-    loadSubmissions();
-    loadAssignments();
-  }).catch(function(err) {
-    btn.disabled = false;
-    btn.textContent = 'Nộp bài';
-    showToast('Lỗi: ' + String(err));
-  });
+  function uploadNext(index, results) {
+    if (index >= recordingsToUpload.length) {
+      finishSubmit(results);
+      return;
+    }
+    var item = recordingsToUpload[index];
+    var ext = (item.blob.type && item.blob.type.indexOf('mp4') !== -1) ? 'm4a' : 'webm';
+    var path = currentStudent.id + '/section_' + item.section_id + '_' + Date.now() + '.' + ext;
+    supabaseClient.storage.from('speaking-videos').upload(path, item.blob, { contentType: item.blob.type || 'audio/webm' })
+      .then(function(uploadRes) {
+        if (!uploadRes.error) {
+          var urlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
+          results.push({ section_id: item.section_id, audio_url: urlRes.data.publicUrl });
+        }
+        uploadNext(index + 1, results);
+      });
+  }
+
+  function finishSubmit(sectionRecordings) {
+    btn.textContent = 'Đang chấm bài...';
+    supabaseClient.functions.invoke('grade-comprehension', {
+      body: { assignment_id: currentComprehensionAssignment.id, student_id: currentStudent.id, answers: answers, section_recordings: sectionRecordings }
+    }).then(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Nộp bài';
+      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+      var payload = res.data;
+      if (!payload || payload.error) { showToast('Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi')); return; }
+
+      document.getElementById('comprehensionSectionsBox').classList.add('hidden');
+      btn.classList.add('hidden');
+      showComprehensionResult(payload.total_score, payload.max_score, payload.results, payload.reading_scores);
+      loadSubmissions();
+      loadAssignments();
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Nộp bài';
+      showToast('Lỗi: ' + String(err));
+    });
+  }
+
+  uploadNext(0, []);
 }
 
-function showComprehensionResult(totalScore, maxScore, results) {
+function showComprehensionResult(totalScore, maxScore, results, readingScores) {
   var box = document.getElementById('comprehensionResultBox');
   var resultMap = {};
   for (var i = 0; i < results.length; i++) resultMap[results[i].question_id] = results[i];
 
+  var html = '';
+  if (readingScores && readingScores.length > 0) {
+    for (var rs = 0; rs < readingScores.length; rs++) {
+      var sec = null;
+      for (var si = 0; si < currentComprehensionSections.length; si++) {
+        if (currentComprehensionSections[si].id === readingScores[rs].section_id) { sec = currentComprehensionSections[si]; break; }
+      }
+      html += '<div style="margin-bottom:14px;padding:12px;background:#171d2e;border-radius:10px;border:1px solid #2a3350;">';
+      html += '<p class="muted" style="margin:0 0 4px 0;">🎙️ Điểm đọc' + (sec && sec.title ? ' — ' + escapeHtml(sec.title) : '') + '</p>';
+      html += '<div class="score-big" style="font-size:28px;">' + (readingScores[rs].score !== null && readingScores[rs].score !== undefined ? readingScores[rs].score : '—') + '<span style="font-size:16px;">/10</span></div>';
+      if (readingScores[rs].feedback) html += '<p style="margin:6px 0 0 0;">' + escapeHtml(readingScores[rs].feedback) + '</p>';
+      html += '</div>';
+    }
+  }
+
   var allQuestions = getAllComprehensionQuestions();
-  var html = '<div class="score-big" style="margin-bottom:14px;">Điểm: ' + totalScore + '/' + maxScore + '</div>';
+  html += '<div class="score-big" style="margin-bottom:14px;">Điểm đọc hiểu: ' + totalScore + '/' + maxScore + '</div>';
   for (var j = 0; j < allQuestions.length; j++) {
     var q = allQuestions[j];
     var r = resultMap[q.id];
@@ -1416,7 +1526,7 @@ function showComprehensionPastResult(submission) {
   document.getElementById('comprehensionResultBox').classList.remove('hidden');
 
   loadComprehensionQuestions(currentComprehensionAssignment.id, function() {
-    showComprehensionResult(submission.total_score, submission.max_score, submission.results || []);
+    showComprehensionResult(submission.total_score, submission.max_score, submission.results || [], submission.reading_scores || []);
   });
 }
 
