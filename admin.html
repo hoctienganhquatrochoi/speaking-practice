@@ -331,44 +331,36 @@
       </div>
 
       <div id="comprehensionBlock" class="hidden">
-        <h2 style="margin-top:0;">📄 Nội dung bài đọc</h2>
-        <label>Nội dung bài đọc dạng text (tùy chọn — dán vào nếu có sẵn)</label>
-        <textarea id="newAssignmentPassageText" rows="4" placeholder="Dán đoạn văn/nội dung bài đọc..."></textarea>
+        <div class="card" style="margin-top:0;background:#0f1420;">
+          <h2>🤖 Tự động tạo cả đề bằng AI (tùy chọn)</h2>
+          <p class="muted">Đưa cả đề vào 1 trong 2 cách dưới (ảnh/PDF/Word hoặc dán text) → AI tự đọc và tách thành từng Phần (VD Exercise 1, 2, 3...), mỗi phần tự nhận loại (nghe/đọc/tự luận/nối) → bạn xem lại, sửa, hoặc xoá/thêm phần bên dưới trước khi lưu. File âm thanh của từng phần nghe thì tự tay tải vào đúng phần sau khi AI tách xong.</p>
 
-        <div id="listeningAudioBlock" class="hidden" style="margin-top:14px;">
-          <label>File âm thanh bài nghe (bắt buộc cho Nghe hiểu)</label>
-          <label class="file-input-label" id="assignmentAudioLabel" for="assignmentAudioInput">🎵 Bấm để chọn file âm thanh</label>
-          <input type="file" id="assignmentAudioInput" accept="audio/*" onchange="onAssignmentAudioSelected()">
-        </div>
-
-        <div class="card" style="margin-top:14px;background:#0f1420;">
-          <h2>🤖 Tự động tạo câu hỏi bằng AI (tùy chọn)</h2>
-          <p class="muted">Đưa vào 1 trong 3 cách dưới đây (có gì dùng nấy) → AI đọc và tự tách câu hỏi + đáp án → bạn xem lại/sửa rồi mới lưu. Nhận diện được cả 3 dạng: trắc nghiệm, đúng/sai, tự luận, kể cả khi trong 1 phiếu có nhiều dạng trộn lẫn.</p>
-
-          <label style="margin-top:10px;">Cách 1 — Ảnh chụp hoặc file PDF/Word đề bài</label>
+          <label style="margin-top:10px;">Cách 1 — Ảnh chụp hoặc file PDF/Word cả đề</label>
           <label class="file-input-label" id="questionImageLabel" for="questionImageInput">🖼️ Bấm để chọn, dán (Ctrl+V) hoặc kéo thả ảnh / PDF / Word (.docx)</label>
           <input type="file" id="questionImageInput" accept="image/*,.pdf,.docx" onchange="onQuestionImageSelected()">
           <img id="questionImagePreviewThumb" class="hidden" style="max-width:100%;max-height:220px;border-radius:8px;margin-top:8px;display:block;">
           <p class="muted hidden" id="questionFileNamePreview" style="margin-top:8px;"></p>
           <div class="row" style="margin-top:10px;">
-            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromImage()">🤖 Tạo câu hỏi từ file đã chọn</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromImage()">🤖 Tách đề từ file đã chọn</button>
             <button class="btn-danger btn-sm hidden" id="clearQuestionImageBtn" onclick="clearQuestionImage()">🗑️ Xóa file</button>
           </div>
           <p class="muted hidden" id="extractStatusText" style="margin-top:8px;"></p>
 
-          <label style="margin-top:18px;">Cách 2 — Dán text câu hỏi (nếu có sẵn, không cần đúng khuôn mẫu)</label>
-          <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán khối câu hỏi (trắc nghiệm/đúng-sai/tự luận, dạng nào cũng được) vào đây..."></textarea>
+          <label style="margin-top:18px;">Cách 2 — Dán text cả đề (nếu có sẵn, không cần đúng khuôn mẫu)</label>
+          <textarea id="pasteQuestionsArea" rows="6" placeholder="Dán cả đề (nhiều phần, nhiều dạng câu hỏi cũng được) vào đây..."></textarea>
           <div class="row" style="margin-top:10px;">
-            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(false)">🤖 Tạo câu hỏi từ text đã dán</button>
-            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(true)">➕ Thêm vào danh sách hiện có</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(false)">🤖 Tách đề từ text đã dán</button>
+            <button class="btn-secondary btn-sm" onclick="extractQuestionsFromPastedText(true)">➕ Thêm vào các phần hiện có</button>
           </div>
           <p class="muted hidden" id="pasteQuestionsStatusText" style="margin-top:8px;"></p>
         </div>
 
-        <div class="card" style="margin-top:14px;background:#0f1420;">
-          <h2>Câu hỏi</h2>
-          <div id="questionsListBox"></div>
-          <button class="btn-secondary btn-sm" style="margin-top:10px;" onclick="addQuestionRow()">+ Thêm câu hỏi thủ công</button>
+        <div id="sectionsListBox" style="margin-top:14px;"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn-secondary btn-sm" onclick="addManualSection('listening')">+ Thêm phần Nghe</button>
+          <button class="btn-secondary btn-sm" onclick="addManualSection('reading')">+ Thêm phần Đọc</button>
+          <button class="btn-secondary btn-sm" onclick="addManualSection('matching')">+ Thêm phần Nối</button>
+          <button class="btn-secondary btn-sm" onclick="addManualSection('writing')">+ Thêm phần Viết/Tự luận</button>
         </div>
       </div>
 
@@ -1202,7 +1194,6 @@ function onAssignmentTypeChange() {
   var readingBlock = document.getElementById('readingTextBlock');
   var questionsBlock = document.getElementById('questionsTextBlock');
   var comprehensionBlock = document.getElementById('comprehensionBlock');
-  var listeningAudioBlock = document.getElementById('listeningAudioBlock');
   var topicHint = document.getElementById('topicHintText');
   var descHint = document.getElementById('descriptionHintText');
   var isComprehension = (type === 'listening' || type === 'reading_comprehension');
@@ -1210,7 +1201,6 @@ function onAssignmentTypeChange() {
   readingBlock.classList.toggle('hidden', type !== 'reading');
   questionsBlock.classList.toggle('hidden', type !== 'ielts_part1' && type !== 'ielts_part3');
   comprehensionBlock.classList.toggle('hidden', !isComprehension);
-  listeningAudioBlock.classList.toggle('hidden', type !== 'listening');
 
   if (type === 'ielts_part2') {
     topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
@@ -1395,22 +1385,8 @@ document.addEventListener('paste', function(e) {
 // COMPREHENSION QUESTIONS BUILDER
 // =====================================================
 var currentQuestionsDraft = [];
-var selectedAssignmentAudio = null;
+var selectedAssignmentAudio = null; // khong con dung o cap bai giao nua, am thanh gio gan theo tung Phan
 var selectedQuestionImage = null;
-
-function onAssignmentAudioSelected() {
-  var input = document.getElementById('assignmentAudioInput');
-  var label = document.getElementById('assignmentAudioLabel');
-  if (input.files && input.files.length > 0) {
-    selectedAssignmentAudio = input.files[0];
-    label.textContent = '✅ ' + selectedAssignmentAudio.name;
-    label.classList.add('has-file');
-  } else {
-    selectedAssignmentAudio = null;
-    label.textContent = '🎵 Bấm để chọn file âm thanh';
-    label.classList.remove('has-file');
-  }
-}
 
 function onQuestionImageSelected() {
   var input = document.getElementById('questionImageInput');
@@ -1480,93 +1456,262 @@ function sanitizeOptionText(text) {
   return t.trim();
 }
 
-function addQuestionRow() {
-  currentQuestionsDraft.push({
-    question_type: 'multiple_choice',
-    question_text: '',
-    option_a: '', option_b: '', option_c: '', option_d: '',
-    correct_option: 'a',
-    correct_answer_text: '',
-    explanation: ''
+var currentSectionsDraft = [];
+
+function blankSection(defaultTitle) {
+  return { title: defaultTitle || '', instruction: '', passage_text: '', audio_url: '', image_url: '', questions: [] };
+}
+
+function blankQuestion(type) {
+  if (type === 'typed') return { question_type: 'typed', question_text: '', correct_answer_text: '', typed_grading_mode: 'semantic', explanation: '' };
+  if (type === 'matching') return { question_type: 'matching', question_text: '', matching_pairs: [ { left: '', right: '' }, { left: '', right: '' } ] };
+  return { question_type: 'multiple_choice', question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_option: 'a', explanation: '' };
+}
+
+function addManualSection(kind) {
+  var titleMap = { listening: 'Phần nghe mới', reading: 'Phần đọc mới', matching: 'Phần nối mới', writing: 'Phần viết mới' };
+  var sec = blankSection(titleMap[kind] || 'Phần mới');
+  if (kind === 'matching') sec.questions.push(blankQuestion('matching'));
+  else if (kind === 'writing') sec.questions.push(blankQuestion('typed'));
+  else sec.questions.push(blankQuestion('multiple_choice'));
+  currentSectionsDraft.push(sec);
+  renderSectionsList();
+}
+
+function removeSection(sIndex) {
+  if (!confirm('Xóa Phần này? Toàn bộ câu hỏi bên trong cũng sẽ mất.')) return;
+  currentSectionsDraft.splice(sIndex, 1);
+  renderSectionsList();
+}
+
+function moveSectionUp(sIndex) {
+  if (sIndex <= 0) return;
+  var tmp = currentSectionsDraft[sIndex - 1];
+  currentSectionsDraft[sIndex - 1] = currentSectionsDraft[sIndex];
+  currentSectionsDraft[sIndex] = tmp;
+  renderSectionsList();
+}
+
+function moveSectionDown(sIndex) {
+  if (sIndex >= currentSectionsDraft.length - 1) return;
+  var tmp = currentSectionsDraft[sIndex + 1];
+  currentSectionsDraft[sIndex + 1] = currentSectionsDraft[sIndex];
+  currentSectionsDraft[sIndex] = tmp;
+  renderSectionsList();
+}
+
+function updateSectionField(sIndex, field, value) {
+  if (currentSectionsDraft[sIndex]) currentSectionsDraft[sIndex][field] = value;
+}
+
+function onSectionAudioSelected(sIndex, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  var statusEl = document.getElementById('sectionAudioStatus_' + sIndex);
+  if (statusEl) statusEl.textContent = 'Đang tải lên...';
+  var ext = (file.name && file.name.split('.').pop()) || 'mp3';
+  var path = 'comprehension-sections/' + Date.now() + '_audio.' + ext;
+  supabaseClient.storage.from('speaking-videos').upload(path, file).then(function(res) {
+    if (res.error) { showToast('Lỗi tải âm thanh: ' + res.error.message); if (statusEl) statusEl.textContent = ''; return; }
+    var urlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
+    if (currentSectionsDraft[sIndex]) currentSectionsDraft[sIndex].audio_url = urlRes.data.publicUrl;
+    renderSectionsList();
   });
-  renderQuestionsList();
 }
 
-function removeQuestionRow(index) {
-  currentQuestionsDraft.splice(index, 1);
-  renderQuestionsList();
+function removeSectionAudio(sIndex) {
+  if (currentSectionsDraft[sIndex]) currentSectionsDraft[sIndex].audio_url = '';
+  renderSectionsList();
 }
 
-function updateQuestionField(index, field, value) {
-  if (currentQuestionsDraft[index]) currentQuestionsDraft[index][field] = value;
-  if (field === 'correct_option') renderQuestionsList();
+function onSectionImageSelected(sIndex, inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  var ext = (file.name && file.name.split('.').pop()) || 'png';
+  var path = 'sections/' + Date.now() + '_' + sIndex + '.' + ext;
+  supabaseClient.storage.from('assignment-images').upload(path, file).then(function(res) {
+    if (res.error) { showToast('Lỗi tải ảnh: ' + res.error.message); return; }
+    var urlRes = supabaseClient.storage.from('assignment-images').getPublicUrl(path);
+    if (currentSectionsDraft[sIndex]) currentSectionsDraft[sIndex].image_url = urlRes.data.publicUrl;
+    renderSectionsList();
+  });
 }
 
-function onQuestionTypeChange(index, value) {
-  currentQuestionsDraft[index].question_type = value;
-  renderQuestionsList();
+function removeSectionImage(sIndex) {
+  if (currentSectionsDraft[sIndex]) currentSectionsDraft[sIndex].image_url = '';
+  renderSectionsList();
 }
 
-function renderQuestionsList() {
-  var box = document.getElementById('questionsListBox');
-  if (currentQuestionsDraft.length === 0) {
-    box.innerHTML = '<p class="muted">Chưa có câu hỏi nào. Dùng "Tự động tạo từ ảnh" hoặc "Dán câu hỏi trắc nghiệm dạng text" ở trên, hoặc bấm "+ Thêm câu hỏi thủ công" bên dưới để tự nhập.</p>';
+function addQuestionToSection(sIndex, type) {
+  currentSectionsDraft[sIndex].questions.push(blankQuestion(type));
+  renderSectionsList();
+}
+
+function removeQuestionFromSection(sIndex, qIndex) {
+  currentSectionsDraft[sIndex].questions.splice(qIndex, 1);
+  renderSectionsList();
+}
+
+function updateSectionQuestionField(sIndex, qIndex, field, value) {
+  var q = currentSectionsDraft[sIndex].questions[qIndex];
+  if (q) q[field] = value;
+  if (field === 'correct_option') renderSectionsList();
+}
+
+function onSectionQuestionTypeChange(sIndex, qIndex, value) {
+  var oldQ = currentSectionsDraft[sIndex].questions[qIndex];
+  var text = oldQ ? oldQ.question_text : '';
+  var newQ = blankQuestion(value);
+  newQ.question_text = text;
+  currentSectionsDraft[sIndex].questions[qIndex] = newQ;
+  renderSectionsList();
+}
+
+function updateMatchingPair(sIndex, qIndex, pairIndex, side, value) {
+  currentSectionsDraft[sIndex].questions[qIndex].matching_pairs[pairIndex][side] = value;
+}
+
+function addMatchingPair(sIndex, qIndex) {
+  currentSectionsDraft[sIndex].questions[qIndex].matching_pairs.push({ left: '', right: '' });
+  renderSectionsList();
+}
+
+function removeMatchingPair(sIndex, qIndex, pairIndex) {
+  var pairs = currentSectionsDraft[sIndex].questions[qIndex].matching_pairs;
+  if (pairs.length <= 2) { alert('Cần ít nhất 2 cặp'); return; }
+  pairs.splice(pairIndex, 1);
+  renderSectionsList();
+}
+
+function renderSectionsList() {
+  var box = document.getElementById('sectionsListBox');
+  if (currentSectionsDraft.length === 0) {
+    box.innerHTML = '<p class="muted">Chưa có Phần nào. Dùng AI tách ở trên (1 lần cho cả đề), hoặc bấm nút "+ Thêm phần..." bên dưới để tự tạo tay.</p>';
     return;
   }
   var html = '';
-  for (var i = 0; i < currentQuestionsDraft.length; i++) {
-    var q = currentQuestionsDraft[i];
-    html += '<div style="border:1px solid #2a3350;border-radius:8px;padding:12px;margin-bottom:10px;">';
-    html += '<div class="row" style="justify-content:space-between;">';
-    html += '<b class="muted">Câu ' + (i + 1) + '</b>';
-    html += '<button class="btn-danger btn-sm" onclick="removeQuestionRow(' + i + ')">Xóa câu</button>';
+  for (var s = 0; s < currentSectionsDraft.length; s++) {
+    var sec = currentSectionsDraft[s];
+    html += '<div class="card" style="border:2px solid #2a3350;margin-bottom:14px;">';
+    html += '<div class="row" style="justify-content:space-between;align-items:center;">';
+    html += '<h2 style="margin:0;">Phần ' + (s + 1) + '</h2>';
+    html += '<div class="row" style="gap:6px;">';
+    html += '<button class="btn-secondary btn-sm" onclick="moveSectionUp(' + s + ')">↑</button>';
+    html += '<button class="btn-secondary btn-sm" onclick="moveSectionDown(' + s + ')">↓</button>';
+    html += '<button class="btn-danger btn-sm" onclick="removeSection(' + s + ')">Xóa phần</button>';
+    html += '</div></div>';
+
+    html += '<label>Tiêu đề phần</label><input type="text" value="' + escapeHtml(sec.title) + '" oninput="updateSectionField(' + s + ',\'title\',this.value)" placeholder="VD: Exercise 1 - Listen and circle">';
+    html += '<label>Hướng dẫn (tùy chọn)</label><input type="text" value="' + escapeHtml(sec.instruction) + '" oninput="updateSectionField(' + s + ',\'instruction\',this.value)" placeholder="VD: Listen and circle the correct answer">';
+    html += '<label>Nội dung đọc/nghe dạng text (tùy chọn)</label><textarea rows="3" oninput="updateSectionField(' + s + ',\'passage_text\',this.value)">' + escapeHtml(sec.passage_text) + '</textarea>';
+
+    html += '<div class="row" style="margin-top:10px;align-items:flex-start;">';
+    html += '<div class="grow">';
+    html += '<label>🎵 Âm thanh riêng cho phần này (nếu là bài nghe)</label>';
+    html += '<input type="file" accept="audio/*" id="sectionAudioInput_' + s + '" class="hidden" onchange="onSectionAudioSelected(' + s + ', this)">';
+    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionAudioInput_' + s + '\').click()">' + (sec.audio_url ? '🎵 Đổi âm thanh' : '+ Chọn file âm thanh') + '</button>';
+    html += ' <span class="muted" id="sectionAudioStatus_' + s + '"></span>';
+    if (sec.audio_url) {
+      html += ' <button type="button" class="btn-danger btn-sm" onclick="removeSectionAudio(' + s + ')">Xóa</button>';
+      html += '<audio controls src="' + sec.audio_url + '" style="display:block;width:100%;margin-top:6px;"></audio>';
+    }
+    html += '</div>';
+    html += '<div class="grow">';
+    html += '<label>🖼️ Ảnh riêng cho phần này (để học sinh nhìn ngay, VD tranh nối, màu sắc)</label>';
+    html += '<input type="file" accept="image/*" id="sectionImageInput_' + s + '" class="hidden" onchange="onSectionImageSelected(' + s + ', this)">';
+    html += '<button type="button" class="btn-secondary btn-sm" onclick="document.getElementById(\'sectionImageInput_' + s + '\').click()">' + (sec.image_url ? '🖼️ Đổi ảnh' : '+ Chọn ảnh') + '</button>';
+    if (sec.image_url) {
+      html += ' <button type="button" class="btn-danger btn-sm" onclick="removeSectionImage(' + s + ')">Xóa</button>';
+      html += '<img src="' + sec.image_url + '" style="display:block;max-width:100%;max-height:160px;margin-top:6px;border-radius:8px;">';
+    }
+    html += '</div>';
     html += '</div>';
 
-    html += '<label>Loại câu hỏi</label>';
-    html += '<select onchange="onQuestionTypeChange(' + i + ', this.value)">';
-    html += '<option value="multiple_choice"' + (q.question_type === 'multiple_choice' ? ' selected' : '') + '>Trắc nghiệm</option>';
-    html += '<option value="typed"' + (q.question_type === 'typed' ? ' selected' : '') + '>Đánh máy tự luận</option>';
-    html += '</select>';
+    html += '<div style="margin:14px 0;border-top:1px solid #2a3350;"></div>';
+    html += '<h3 style="color:#9db4ff;margin:0 0 8px 0;">Câu hỏi trong phần này</h3>';
 
-    html += '<label>Câu hỏi</label>';
-    html += '<input type="text" value="' + escapeHtml(q.question_text) + '" oninput="updateQuestionField(' + i + ',\'question_text\',this.value)" placeholder="VD: What is the name of the kitten?">';
-
-    if (q.question_type === 'multiple_choice') {
-      html += '<p class="muted" style="margin-top:8px;">Tích vào ô tròn cạnh đáp án đúng:</p>';
-      html += '<div class="row" style="margin-top:4px;">';
-      html += buildMcOptionEditorHtml(i, 'a', 'A');
-      html += buildMcOptionEditorHtml(i, 'b', 'B');
-      html += '</div>';
-      html += '<div class="row">';
-      html += buildMcOptionEditorHtml(i, 'c', 'C (tùy chọn)');
-      html += buildMcOptionEditorHtml(i, 'd', 'D (tùy chọn)');
-      html += '</div>';
-      html += '<label>Giải thích (tùy chọn)</label>';
-      html += '<input type="text" value="' + escapeHtml(q.explanation) + '" oninput="updateQuestionField(' + i + ',\'explanation\',this.value)" placeholder="Hiện cho học sinh sau khi nộp">';
-    } else {
-      html += '<label>Đáp án đúng tham khảo (Gemini sẽ so ý nghĩa, không cần khớp chữ tuyệt đối)</label>';
-      html += '<textarea rows="2" oninput="updateQuestionField(' + i + ',\'correct_answer_text\',this.value)">' + escapeHtml(q.correct_answer_text) + '</textarea>';
+    for (var qi = 0; qi < sec.questions.length; qi++) {
+      html += renderSectionQuestionHtml(s, qi);
     }
+
+    html += '<div class="row" style="margin-top:8px;">';
+    html += '<button class="btn-secondary btn-sm" onclick="addQuestionToSection(' + s + ',\'multiple_choice\')">+ Trắc nghiệm</button>';
+    html += '<button class="btn-secondary btn-sm" onclick="addQuestionToSection(' + s + ',\'typed\')">+ Tự luận</button>';
+    html += '<button class="btn-secondary btn-sm" onclick="addQuestionToSection(' + s + ',\'matching\')">+ Nối</button>';
+    html += '</div>';
+
     html += '</div>';
   }
   box.innerHTML = html;
 }
 
-function buildMcOptionEditorHtml(qIndex, letter, labelSuffix) {
-  var q = currentQuestionsDraft[qIndex];
-  var val = q['option_' + letter] || '';
-  var isCorrect = q.correct_option === letter;
-  var html = '<div class="grow">';
-  html += '<label style="display:flex;align-items:center;gap:6px;color:' + (isCorrect ? '#7de3a0' : '#9db4ff') + ';">';
-  html += '<input type="radio" name="mcCorrect_' + qIndex + '" value="' + letter + '"' + (isCorrect ? ' checked' : '') + ' onchange="updateQuestionField(' + qIndex + ',\'correct_option\',\'' + letter + '\')" style="width:auto;">';
-  html += (isCorrect ? '✓ ' : '') + 'Đáp án ' + labelSuffix;
-  html += '</label>';
-  html += '<input type="text" value="' + escapeHtml(val) + '" oninput="updateQuestionField(' + qIndex + ',\'option_' + letter + '\',this.value)">';
+function renderSectionQuestionHtml(sIndex, qIndex) {
+  var q = currentSectionsDraft[sIndex].questions[qIndex];
+  var html = '<div style="border:1px solid #2a3350;border-radius:8px;padding:12px;margin-bottom:10px;">';
+  html += '<div class="row" style="justify-content:space-between;">';
+  html += '<b class="muted">Câu ' + (qIndex + 1) + '</b>';
+  html += '<button class="btn-danger btn-sm" onclick="removeQuestionFromSection(' + sIndex + ',' + qIndex + ')">Xóa câu</button>';
+  html += '</div>';
+
+  html += '<label>Loại câu hỏi</label>';
+  html += '<select onchange="onSectionQuestionTypeChange(' + sIndex + ',' + qIndex + ', this.value)">';
+  html += '<option value="multiple_choice"' + (q.question_type === 'multiple_choice' ? ' selected' : '') + '>Trắc nghiệm</option>';
+  html += '<option value="typed"' + (q.question_type === 'typed' ? ' selected' : '') + '>Tự luận</option>';
+  html += '<option value="matching"' + (q.question_type === 'matching' ? ' selected' : '') + '>Nối</option>';
+  html += '</select>';
+
+  html += '<label>Câu hỏi / Đề bài</label>';
+  html += '<input type="text" value="' + escapeHtml(q.question_text) + '" oninput="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'question_text\',this.value)">';
+
+  if (q.question_type === 'multiple_choice') {
+    html += '<p class="muted" style="margin-top:8px;">Tích vào ô tròn cạnh đáp án đúng:</p>';
+    html += '<div class="row" style="margin-top:4px;">';
+    html += buildSectionMcOptionHtml(sIndex, qIndex, 'a', 'A');
+    html += buildSectionMcOptionHtml(sIndex, qIndex, 'b', 'B');
+    html += '</div><div class="row">';
+    html += buildSectionMcOptionHtml(sIndex, qIndex, 'c', 'C (tùy chọn)');
+    html += buildSectionMcOptionHtml(sIndex, qIndex, 'd', 'D (tùy chọn)');
+    html += '</div>';
+    html += '<label>Giải thích (tùy chọn)</label>';
+    html += '<input type="text" value="' + escapeHtml(q.explanation || '') + '" oninput="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'explanation\',this.value)" placeholder="Hiện cho học sinh sau khi nộp">';
+  } else if (q.question_type === 'typed') {
+    html += '<label>Đáp án đúng</label>';
+    html += '<textarea rows="2" oninput="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'correct_answer_text\',this.value)">' + escapeHtml(q.correct_answer_text || '') + '</textarea>';
+    html += '<label>Cách chấm</label>';
+    html += '<select onchange="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'typed_grading_mode\',this.value)">';
+    html += '<option value="semantic"' + (q.typed_grading_mode !== 'exact' ? ' selected' : '') + '>Chấm theo ý (linh động cách diễn đạt)</option>';
+    html += '<option value="exact"' + (q.typed_grading_mode === 'exact' ? ' selected' : '') + '>Chấm khớp chữ (đánh vần / sắp xếp câu / điền từ đúng)</option>';
+    html += '</select>';
+  } else if (q.question_type === 'matching') {
+    html += '<p class="muted" style="margin-top:8px;">Nhập từng cặp nối đúng (cột trái - cột phải tương ứng):</p>';
+    for (var p = 0; p < q.matching_pairs.length; p++) {
+      html += '<div class="row" style="margin-bottom:6px;">';
+      html += '<input type="text" value="' + escapeHtml(q.matching_pairs[p].left) + '" placeholder="Cột trái ' + (p + 1) + '" oninput="updateMatchingPair(' + sIndex + ',' + qIndex + ',' + p + ',\'left\',this.value)" style="flex:1;">';
+      html += '<input type="text" value="' + escapeHtml(q.matching_pairs[p].right) + '" placeholder="Cột phải ' + (p + 1) + '" oninput="updateMatchingPair(' + sIndex + ',' + qIndex + ',' + p + ',\'right\',this.value)" style="flex:1;">';
+      html += '<button class="btn-danger btn-sm" onclick="removeMatchingPair(' + sIndex + ',' + qIndex + ',' + p + ')">✕</button>';
+      html += '</div>';
+    }
+    html += '<button class="btn-secondary btn-sm" onclick="addMatchingPair(' + sIndex + ',' + qIndex + ')">+ Thêm cặp</button>';
+  }
   html += '</div>';
   return html;
 }
 
-// --- Tao cau hoi bang AI: tu file (anh/PDF/Word) hoac tu text dan vao ---
+function buildSectionMcOptionHtml(sIndex, qIndex, letter, labelSuffix) {
+  var q = currentSectionsDraft[sIndex].questions[qIndex];
+  var val = q['option_' + letter] || '';
+  var isCorrect = q.correct_option === letter;
+  var html = '<div class="grow">';
+  html += '<label style="display:flex;align-items:center;gap:6px;color:' + (isCorrect ? '#7de3a0' : '#9db4ff') + ';">';
+  html += '<input type="radio" name="mcCorrect_' + sIndex + '_' + qIndex + '" value="' + letter + '"' + (isCorrect ? ' checked' : '') + ' onchange="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'correct_option\',\'' + letter + '\')" style="width:auto;">';
+  html += (isCorrect ? '✓ ' : '') + 'Đáp án ' + labelSuffix;
+  html += '</label>';
+  html += '<input type="text" value="' + escapeHtml(val) + '" oninput="updateSectionQuestionField(' + sIndex + ',' + qIndex + ',\'option_' + letter + '\',this.value)">';
+  html += '</div>';
+  return html;
+}
+
+// --- Tao Phan bang AI: tu file (anh/PDF/Word) hoac tu text dan vao ---
 function readFileAsBase64(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
@@ -1576,28 +1721,45 @@ function readFileAsBase64(file) {
   });
 }
 
-function applyExtractedQuestions(data, statusEl) {
-  if (data.passage_text) {
-    document.getElementById('newAssignmentPassageText').value = data.passage_text;
+function applyExtractedSections(data, statusEl, appendMode) {
+  if (!data.sections || data.sections.length === 0) {
+    statusEl.textContent = '⚠️ AI không tìm thấy phần/câu hỏi nào trong nội dung này.';
+    return;
   }
-  if (data.questions && data.questions.length > 0) {
-    currentQuestionsDraft = [];
-    for (var i = 0; i < data.questions.length; i++) {
-      var q = data.questions[i];
-      currentQuestionsDraft.push({
-        question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
+  var newSections = data.sections.map(function(sec) {
+    var questions = (sec.questions || []).map(function(q) {
+      if (q.question_type === 'matching') {
+        return {
+          question_type: 'matching',
+          question_text: sanitizeQuestionText(q.question_text || ''),
+          matching_pairs: (q.matching_pairs || []).map(function(p) { return { left: p.left || '', right: p.right || '' }; })
+        };
+      }
+      if (q.question_type === 'typed') {
+        return {
+          question_type: 'typed',
+          question_text: sanitizeQuestionText(q.question_text || ''),
+          correct_answer_text: q.correct_answer_text || '',
+          typed_grading_mode: q.typed_grading_mode === 'exact' ? 'exact' : 'semantic',
+          explanation: ''
+        };
+      }
+      return {
+        question_type: 'multiple_choice',
         question_text: sanitizeQuestionText(q.question_text || ''),
-        option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
+        option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''),
+        option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
         correct_option: q.correct_option || 'a',
-        correct_answer_text: q.correct_answer_text || '',
         explanation: ''
-      });
-    }
-    renderQuestionsList();
-    statusEl.textContent = '✅ Đã tách được ' + data.questions.length + ' câu hỏi, kiểm tra lại bên dưới trước khi lưu nhé.';
-  } else {
-    statusEl.textContent = '⚠️ AI không tìm thấy câu hỏi nào trong nội dung này.';
-  }
+      };
+    });
+    return { title: sec.title || '', instruction: sec.instruction || '', passage_text: sec.passage_text || '', audio_url: '', image_url: '', questions: questions };
+  });
+
+  if (appendMode) currentSectionsDraft = currentSectionsDraft.concat(newSections);
+  else currentSectionsDraft = newSections;
+  renderSectionsList();
+  statusEl.textContent = '✅ Đã tách được ' + newSections.length + ' phần, kiểm tra lại bên dưới, gắn âm thanh/ảnh cho từng phần nghe nếu cần, rồi mới lưu.';
 }
 
 function extractQuestionsFromImage() {
@@ -1618,7 +1780,7 @@ function extractQuestionsFromImage() {
         if (res.error) { statusText.textContent = 'Lỗi: ' + res.error.message; return; }
         var payload = res.data;
         if (!payload || payload.error) { statusText.textContent = 'Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi'); return; }
-        applyExtractedQuestions(payload.data, statusText);
+        applyExtractedSections(payload.data, statusText, false);
       }).catch(function(err) {
         statusText.textContent = 'Lỗi: ' + String(err);
       });
@@ -1674,30 +1836,7 @@ function extractQuestionsFromPastedText(appendMode) {
       if (res.error) { statusEl.textContent = 'Lỗi: ' + res.error.message; return; }
       var payload = res.data;
       if (!payload || payload.error) { statusEl.textContent = 'Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi'); return; }
-      var data = payload.data;
-      if (!data.questions || data.questions.length === 0) {
-        statusEl.textContent = '⚠️ AI không tìm thấy câu hỏi nào trong đoạn text này.';
-        return;
-      }
-      var newQuestions = [];
-      for (var i = 0; i < data.questions.length; i++) {
-        var q = data.questions[i];
-        newQuestions.push({
-          question_type: q.question_type === 'typed' ? 'typed' : 'multiple_choice',
-          question_text: sanitizeQuestionText(q.question_text || ''),
-          option_a: sanitizeOptionText(q.option_a || ''), option_b: sanitizeOptionText(q.option_b || ''), option_c: sanitizeOptionText(q.option_c || ''), option_d: sanitizeOptionText(q.option_d || ''),
-          correct_option: q.correct_option || 'a',
-          correct_answer_text: q.correct_answer_text || '',
-          explanation: ''
-        });
-      }
-      if (appendMode) {
-        currentQuestionsDraft = currentQuestionsDraft.concat(newQuestions);
-      } else {
-        currentQuestionsDraft = newQuestions;
-      }
-      renderQuestionsList();
-      statusEl.textContent = '✅ Đã tách được ' + newQuestions.length + ' câu hỏi, kiểm tra lại bên dưới trước khi lưu nhé.';
+      applyExtractedSections(payload.data, statusEl, appendMode);
     }).catch(function(err) {
       statusEl.textContent = 'Lỗi: ' + String(err);
     });
@@ -1720,7 +1859,7 @@ function addAssignment() {
   var type = document.getElementById('newAssignmentType').value;
   var readingText = document.getElementById('newAssignmentReadingText').value.trim();
   var questionsText = document.getElementById('newAssignmentQuestionsText').value.trim();
-  var passageText = document.getElementById('newAssignmentPassageText').value.trim();
+  var passageText = ''; // noi dung bai doc gio nam trong tung Phan (sp_comprehension_sections), khong con o cap bai giao
   var isComprehension = (type === 'listening' || type === 'reading_comprehension');
 
   var checkboxes = document.querySelectorAll('.assignment-class-checkbox:checked');
@@ -1735,16 +1874,24 @@ function addAssignment() {
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
   if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
-  if (type === 'listening' && !selectedAssignmentAudio) { showToast('Loại "Nghe hiểu" cần tải file âm thanh lên'); return; }
-  var validQuestions = [];
   if (isComprehension) {
-    validQuestions = currentQuestionsDraft.filter(function(q) { return q.question_text.trim(); });
-    if (validQuestions.length === 0) { showToast('Cần ít nhất 1 câu hỏi có nội dung'); return; }
-    for (var vq = 0; vq < validQuestions.length; vq++) {
-      if (validQuestions[vq].question_type === 'multiple_choice' && !validQuestions[vq].option_a.trim() && !validQuestions[vq].option_b.trim()) {
-        showToast('Câu trắc nghiệm cần ít nhất đáp án A và B'); return;
+    if (currentSectionsDraft.length === 0) { showToast('Cần ít nhất 1 Phần có câu hỏi (dùng AI tách hoặc bấm "+ Thêm phần...")'); return; }
+    var hasAnyValidQuestion = false;
+    for (var si = 0; si < currentSectionsDraft.length; si++) {
+      var validQs = currentSectionsDraft[si].questions.filter(function(q) { return q.question_text.trim(); });
+      if (validQs.length > 0) hasAnyValidQuestion = true;
+      for (var vqi = 0; vqi < validQs.length; vqi++) {
+        var vq = validQs[vqi];
+        if (vq.question_type === 'multiple_choice' && !vq.option_a.trim() && !vq.option_b.trim()) {
+          showToast('Phần ' + (si + 1) + ': câu trắc nghiệm cần ít nhất đáp án A và B'); return;
+        }
+        if (vq.question_type === 'matching') {
+          var validPairs = vq.matching_pairs.filter(function(p) { return p.left.trim() && p.right.trim(); });
+          if (validPairs.length < 2) { showToast('Phần ' + (si + 1) + ': câu nối cần ít nhất 2 cặp đầy đủ'); return; }
+        }
       }
     }
+    if (!hasAnyValidQuestion) { showToast('Cần ít nhất 1 câu hỏi có nội dung trong các Phần'); return; }
   }
 
   var createBtn = document.getElementById('createAssignmentBtn');
@@ -1767,41 +1914,90 @@ function addAssignment() {
 
   function insertQuestionsThenExclusions(assignmentId) {
     if (!isComprehension) { insertExclusionsThenFinish(assignmentId); return; }
-    var rows = [];
-    for (var i = 0; i < validQuestions.length; i++) {
-      var q = validQuestions[i];
-      rows.push({
+    if (currentSectionsDraft.length === 0) { insertExclusionsThenFinish(assignmentId); return; }
+
+    var sectionIndex = 0;
+
+    function insertNextSection() {
+      if (sectionIndex >= currentSectionsDraft.length) { insertExclusionsThenFinish(assignmentId); return; }
+      var sec = currentSectionsDraft[sectionIndex];
+
+      supabaseClient.from('sp_comprehension_sections').insert({
         assignment_id: assignmentId,
-        question_order: i,
-        question_type: q.question_type,
-        question_text: q.question_text,
-        option_a: q.option_a || null,
-        option_b: q.option_b || null,
-        option_c: q.option_c || null,
-        option_d: q.option_d || null,
-        correct_option: q.question_type === 'multiple_choice' ? q.correct_option : null,
-        correct_answer_text: q.question_type === 'typed' ? q.correct_answer_text : null,
-        explanation: q.explanation || null
+        section_order: sectionIndex,
+        title: sec.title || '',
+        instruction: sec.instruction || null,
+        passage_text: sec.passage_text || null,
+        audio_url: sec.audio_url || null,
+        image_url: sec.image_url || null
+      }).select().single().then(function(secRes) {
+        if (secRes.error) {
+          pendingRetryAssignmentId = assignmentId;
+          createBtn.disabled = false;
+          createBtn.textContent = '+ Tạo bài giao';
+          showAddAssignmentMsg(
+            '<div style="background:#4a2030;color:#ff9db0;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.6;">' +
+            '❌ Đã tạo bài giao nhưng <b>LƯU PHẦN ' + (sectionIndex + 1) + ' BỊ LỖI</b>:<br>' +
+            '<code style="word-break:break-all;">' + escapeHtml(secRes.error.message) + '</code><br>' +
+            'Nội dung các Phần bên dưới vẫn còn nguyên, cô kiểm tra lại rồi bấm nút bên dưới để thử lưu lại (không cần làm lại từ đầu).' +
+            '</div>' +
+            '<button class="btn-primary btn-sm" style="margin-top:10px;" onclick="retrySaveQuestions()">🔁 Thử lưu lại</button>'
+          );
+          return;
+        }
+
+        var sectionId = secRes.data.id;
+        var validQs = sec.questions.filter(function(q) { return q.question_text.trim(); });
+        var qRows = [];
+        for (var qi = 0; qi < validQs.length; qi++) {
+          var q = validQs[qi];
+          var row = {
+            section_id: sectionId,
+            assignment_id: assignmentId,
+            question_order: qi,
+            question_type: q.question_type,
+            question_text: q.question_text
+          };
+          if (q.question_type === 'multiple_choice') {
+            row.option_a = q.option_a || null;
+            row.option_b = q.option_b || null;
+            row.option_c = q.option_c || null;
+            row.option_d = q.option_d || null;
+            row.correct_option = q.correct_option || 'a';
+            row.explanation = q.explanation || null;
+          } else if (q.question_type === 'typed') {
+            row.correct_answer_text = q.correct_answer_text || null;
+            row.typed_grading_mode = q.typed_grading_mode || 'semantic';
+          } else if (q.question_type === 'matching') {
+            row.matching_pairs = q.matching_pairs || [];
+          }
+          qRows.push(row);
+        }
+
+        if (qRows.length === 0) { sectionIndex++; insertNextSection(); return; }
+
+        supabaseClient.from('sp_comprehension_questions').insert(qRows).then(function(qRes) {
+          if (qRes.error) {
+            pendingRetryAssignmentId = assignmentId;
+            createBtn.disabled = false;
+            createBtn.textContent = '+ Tạo bài giao';
+            showAddAssignmentMsg(
+              '<div style="background:#4a2030;color:#ff9db0;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.6;">' +
+              '❌ Đã tạo bài giao nhưng <b>LƯU CÂU HỎI PHẦN ' + (sectionIndex + 1) + ' BỊ LỖI</b>:<br>' +
+              '<code style="word-break:break-all;">' + escapeHtml(qRes.error.message) + '</code><br>' +
+              'Nội dung các Phần bên dưới vẫn còn nguyên, cô kiểm tra lại rồi bấm nút bên dưới để thử lưu lại (không cần làm lại từ đầu).' +
+              '</div>' +
+              '<button class="btn-primary btn-sm" style="margin-top:10px;" onclick="retrySaveQuestions()">🔁 Thử lưu lại</button>'
+            );
+            return;
+          }
+          sectionIndex++;
+          insertNextSection();
+        });
       });
     }
-    supabaseClient.from('sp_comprehension_questions').insert(rows).then(function(qRes) {
-      if (qRes.error) {
-        // QUAN TRONG: KHONG tiep tuc reset form khi luu cau hoi bi loi, de khong mat du lieu da soan.
-        pendingRetryAssignmentId = assignmentId;
-        createBtn.disabled = false;
-        createBtn.textContent = '+ Tạo bài giao';
-        showAddAssignmentMsg(
-          '<div style="background:#4a2030;color:#ff9db0;padding:12px 14px;border-radius:8px;font-size:13px;line-height:1.6;">' +
-          '❌ Đã tạo bài giao nhưng <b>LƯU CÂU HỎI BỊ LỖI</b>, câu hỏi chưa được lưu:<br>' +
-          '<code style="word-break:break-all;">' + escapeHtml(qRes.error.message) + '</code><br>' +
-          'Danh sách câu hỏi bên dưới vẫn còn nguyên, cô kiểm tra lại rồi bấm nút bên dưới để thử lưu lại (không cần làm lại từ đầu).' +
-          '</div>' +
-          '<button class="btn-primary btn-sm" style="margin-top:10px;" onclick="retrySaveQuestions()">🔁 Thử lưu lại câu hỏi</button>'
-        );
-        return;
-      }
-      insertExclusionsThenFinish(assignmentId);
-    });
+
+    insertNextSection();
   }
 
   window.retrySaveQuestions = function() {
@@ -1809,7 +2005,10 @@ function addAssignment() {
     clearAddAssignmentMsg();
     createBtn.disabled = true;
     createBtn.textContent = 'Đang thử lại...';
-    insertQuestionsThenExclusions(pendingRetryAssignmentId);
+    // Xoa het cac Phan da lo luu 1 phan truoc do lan truoc de tranh bi luu trung lap khi thu lai
+    supabaseClient.from('sp_comprehension_sections').delete().eq('assignment_id', pendingRetryAssignmentId).then(function() {
+      insertQuestionsThenExclusions(pendingRetryAssignmentId);
+    });
   };
 
   function finishAssignmentCreation() {
@@ -1822,20 +2021,15 @@ function addAssignment() {
     document.getElementById('newAssignmentDueDate').value = '';
     document.getElementById('newAssignmentReadingText').value = '';
     document.getElementById('newAssignmentQuestionsText').value = '';
-    document.getElementById('newAssignmentPassageText').value = '';
     document.getElementById('pasteQuestionsArea').value = '';
     document.getElementById('pasteQuestionsStatusText').classList.add('hidden');
     setAssignmentImageFile(null);
     document.getElementById('assignmentImageInput').value = '';
-    selectedAssignmentAudio = null;
-    document.getElementById('assignmentAudioInput').value = '';
-    document.getElementById('assignmentAudioLabel').textContent = '🎵 Bấm để chọn file âm thanh';
-    document.getElementById('assignmentAudioLabel').classList.remove('has-file');
     setQuestionImageFile(null);
     document.getElementById('questionImageInput').value = '';
     document.getElementById('extractStatusText').classList.add('hidden');
-    currentQuestionsDraft = [];
-    renderQuestionsList();
+    currentSectionsDraft = [];
+    renderSectionsList();
     var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
     for (var k = 0; k < checkedBoxes.length; k++) checkedBoxes[k].checked = false;
     document.getElementById('excludeStudentsCheckboxes').innerHTML = '<p class="muted">Chọn lớp ở trên trước để hiện danh sách học sinh</p>';
@@ -2082,28 +2276,74 @@ function viewAssignmentQuestions(assignmentId, btn) {
   if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
   box.innerHTML = '<p class="muted">Đang tải...</p>';
-  supabaseClient.from('sp_comprehension_questions').select('*').eq('assignment_id', assignmentId).order('question_order', { ascending: true })
-    .then(function(res) {
-      if (res.error) { box.innerHTML = '<p class="muted">Lỗi tải câu hỏi</p>'; return; }
-      var qs = res.data || [];
-      if (qs.length === 0) { box.innerHTML = '<p class="muted">Chưa có câu hỏi nào</p>'; return; }
+
+  Promise.all([
+    supabaseClient.from('sp_comprehension_sections').select('*').eq('assignment_id', assignmentId).order('section_order', { ascending: true }),
+    supabaseClient.from('sp_comprehension_questions').select('*').eq('assignment_id', assignmentId).is('section_id', null).order('question_order', { ascending: true })
+  ]).then(function(results) {
+    var sectionsRes = results[0];
+    var legacyRes = results[1];
+    if (sectionsRes.error) { box.innerHTML = '<p class="muted">Lỗi tải: ' + escapeHtml(sectionsRes.error.message) + '</p>'; return; }
+    var sections = sectionsRes.data || [];
+    var legacyQuestions = legacyRes.data || [];
+
+    if (sections.length === 0 && legacyQuestions.length === 0) {
+      box.innerHTML = '<p class="muted">Chưa có câu hỏi nào</p>';
+      return;
+    }
+
+    var sectionPromises = sections.map(function(sec) {
+      return supabaseClient.from('sp_comprehension_questions').select('*').eq('section_id', sec.id).order('question_order', { ascending: true });
+    });
+
+    Promise.all(sectionPromises).then(function(qResults) {
       var html = '';
-      for (var i = 0; i < qs.length; i++) {
-        var q = qs[i];
-        html += '<div style="border-top:1px solid #232b45;padding-top:8px;margin-top:8px;font-size:14px;">';
-        html += '<b>Câu ' + (i + 1) + ':</b> ' + escapeHtml(q.question_text) + '<br>';
-        if (q.question_type === 'multiple_choice') {
-          html += 'A. ' + escapeHtml(q.option_a || '') + ' | B. ' + escapeHtml(q.option_b || '');
-          if (q.option_c) html += ' | C. ' + escapeHtml(q.option_c);
-          if (q.option_d) html += ' | D. ' + escapeHtml(q.option_d);
-          html += '<br><span class="muted">Đáp án đúng: ' + (q.correct_option || '').toUpperCase() + '</span>';
-        } else {
-          html += '<span class="muted">Đáp án tham khảo: ' + escapeHtml(q.correct_answer_text || '') + '</span>';
-        }
+      for (var s = 0; s < sections.length; s++) {
+        var sec = sections[s];
+        var qs = (qResults[s] && qResults[s].data) || [];
+        html += '<div style="border-top:2px solid #2a3350;padding-top:10px;margin-top:10px;">';
+        html += '<b style="color:#9db4ff;">Phần ' + (s + 1) + (sec.title ? ': ' + escapeHtml(sec.title) : '') + '</b>';
+        if (sec.instruction) html += '<div class="muted" style="margin-top:4px;">' + escapeHtml(sec.instruction) + '</div>';
+        if (sec.audio_url) html += '<audio controls src="' + sec.audio_url + '" style="width:100%;margin-top:6px;"></audio>';
+        if (sec.image_url) html += '<img src="' + sec.image_url + '" style="max-width:200px;border-radius:8px;display:block;margin-top:6px;">';
+        if (sec.passage_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;font-style:italic;">' + escapeHtml(sec.passage_text) + '</div>';
+        html += renderQuestionPreviewList(qs);
         html += '</div>';
       }
-      box.innerHTML = html;
+      if (legacyQuestions.length > 0) {
+        html += '<div style="border-top:2px solid #2a3350;padding-top:10px;margin-top:10px;">';
+        html += '<b style="color:#9db4ff;">Câu hỏi (chưa phân Phần — bài giao tạo trước khi có tính năng chia Phần)</b>';
+        html += renderQuestionPreviewList(legacyQuestions);
+        html += '</div>';
+      }
+      box.innerHTML = html || '<p class="muted">Chưa có câu hỏi nào</p>';
     });
+  });
+}
+
+function renderQuestionPreviewList(qs) {
+  var html = '';
+  for (var i = 0; i < qs.length; i++) {
+    var q = qs[i];
+    html += '<div style="border-top:1px solid #232b45;padding-top:8px;margin-top:8px;font-size:14px;">';
+    html += '<b>Câu ' + (i + 1) + ':</b> ' + escapeHtml(q.question_text) + '<br>';
+    if (q.question_type === 'multiple_choice') {
+      html += 'A. ' + escapeHtml(q.option_a || '') + ' | B. ' + escapeHtml(q.option_b || '');
+      if (q.option_c) html += ' | C. ' + escapeHtml(q.option_c);
+      if (q.option_d) html += ' | D. ' + escapeHtml(q.option_d);
+      html += '<br><span class="muted">Đáp án đúng: ' + (q.correct_option || '').toUpperCase() + '</span>';
+    } else if (q.question_type === 'matching') {
+      var pairs = q.matching_pairs || [];
+      html += '<span class="muted">Các cặp nối đúng: ';
+      var pairTexts = [];
+      for (var p = 0; p < pairs.length; p++) pairTexts.push(escapeHtml(pairs[p].left) + ' ↔ ' + escapeHtml(pairs[p].right));
+      html += pairTexts.join(' | ') + '</span>';
+    } else {
+      html += '<span class="muted">Đáp án tham khảo: ' + escapeHtml(q.correct_answer_text || '') + ' (' + (q.typed_grading_mode === 'exact' ? 'chấm khớp chữ' : 'chấm theo ý') + ')</span>';
+    }
+    html += '</div>';
+  }
+  return html;
 }
 
 function updateAssignmentDueDate(assignmentId, newDate) {
