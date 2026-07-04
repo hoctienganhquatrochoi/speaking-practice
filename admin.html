@@ -1459,7 +1459,7 @@ function sanitizeOptionText(text) {
 var currentSectionsDraft = [];
 
 function blankSection(defaultTitle) {
-  return { title: defaultTitle || '', instruction: '', passage_text: '', audio_url: '', image_url: '', questions: [] };
+  return { title: defaultTitle || '', instruction: '', passage_text: '', audio_url: '', image_url: '', language: 'en', requires_reading_recording: false, questions: [] };
 }
 
 function blankQuestion(type) {
@@ -1604,6 +1604,17 @@ function renderSectionsList() {
     html += '<label>Tiêu đề phần</label><input type="text" value="' + escapeHtml(sec.title) + '" oninput="updateSectionField(' + s + ',\'title\',this.value)" placeholder="VD: Exercise 1 - Listen and circle">';
     html += '<label>Hướng dẫn (tùy chọn)</label><input type="text" value="' + escapeHtml(sec.instruction) + '" oninput="updateSectionField(' + s + ',\'instruction\',this.value)" placeholder="VD: Listen and circle the correct answer">';
     html += '<label>Nội dung đọc/nghe dạng text (tùy chọn)</label><textarea rows="3" oninput="updateSectionField(' + s + ',\'passage_text\',this.value)">' + escapeHtml(sec.passage_text) + '</textarea>';
+
+    html += '<div class="row" style="margin-top:8px;align-items:center;">';
+    html += '<div class="grow"><label>Ngôn ngữ đoạn văn</label>';
+    html += '<select onchange="updateSectionField(' + s + ',\'language\',this.value)">';
+    html += '<option value="en"' + (sec.language !== 'vi' ? ' selected' : '') + '>Tiếng Anh</option>';
+    html += '<option value="vi"' + (sec.language === 'vi' ? ' selected' : '') + '>Tiếng Việt</option>';
+    html += '</select></div>';
+    html += '<div class="grow" style="padding-top:26px;"><label style="display:flex;align-items:center;gap:8px;font-weight:normal;color:#e8ebf2;">';
+    html += '<input type="checkbox" style="width:auto;"' + (sec.requires_reading_recording ? ' checked' : '') + ' onchange="updateSectionField(' + s + ',\'requires_reading_recording\',this.checked)">';
+    html += 'Chấm đọc thành tiếng (học sinh ghi âm đọc đoạn văn ở trên)</label></div>';
+    html += '</div>';
 
     html += '<div class="row" style="margin-top:10px;align-items:flex-start;">';
     html += '<div class="grow">';
@@ -1753,7 +1764,9 @@ function applyExtractedSections(data, statusEl, appendMode) {
         explanation: ''
       };
     });
-    return { title: sec.title || '', instruction: sec.instruction || '', passage_text: sec.passage_text || '', audio_url: '', image_url: '', questions: questions };
+    var passageText = sec.passage_text || '';
+    var isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(passageText);
+    return { title: sec.title || '', instruction: sec.instruction || '', passage_text: passageText, audio_url: '', image_url: '', language: isVietnamese ? 'vi' : 'en', requires_reading_recording: false, questions: questions };
   });
 
   if (appendMode) currentSectionsDraft = currentSectionsDraft.concat(newSections);
@@ -1929,7 +1942,9 @@ function addAssignment() {
         instruction: sec.instruction || null,
         passage_text: sec.passage_text || null,
         audio_url: sec.audio_url || null,
-        image_url: sec.image_url || null
+        image_url: sec.image_url || null,
+        language: sec.language || 'en',
+        requires_reading_recording: !!sec.requires_reading_recording
       }).select().single().then(function(secRes) {
         if (secRes.error) {
           pendingRetryAssignmentId = assignmentId;
