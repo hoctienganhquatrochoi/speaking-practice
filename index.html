@@ -256,6 +256,7 @@
     </div>
     <div id="readingTextPreview" class="hidden scrollbox" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
       <p class="muted" id="readingTextPreviewLabel" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
+      <audio id="readingModelAudio" controls class="hidden" style="width:100%;margin-bottom:10px;"></audio>
       <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;white-space:pre-wrap;"></p>
     </div>
 
@@ -296,6 +297,14 @@
     </div>
     <p class="muted" style="margin-top:4px;">Bài "Đang chấm" sẽ tự động cập nhật, không cần bấm nút này.</p>
     <div id="submissionsList" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <h2 style="margin:0;">📚 Bài tập Wordwall</h2>
+      <button class="btn-secondary btn-sm" onclick="loadWordwallSessions()">🔄 Làm mới</button>
+    </div>
+    <div id="wordwallSessionsList" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -416,6 +425,59 @@ function showMainApp() {
   document.getElementById('welcomeName').textContent = '🎤 Chào ' + currentStudent.name;
   loadSubmissions(); // tải trước để biết bài giao nào đã nộp rồi
   loadAssignments();
+  loadWordwallSessions();
+}
+
+// =====================================================
+// WORDWALL — hien thi buoi hoc duoc gan cho dung lop cua hoc sinh
+// (du lieu tao ben trang Wordwall Manager, chi doc lai o day)
+// =====================================================
+function loadWordwallSessions() {
+  var box = document.getElementById('wordwallSessionsList');
+  if (!currentStudent.class_id) { box.innerHTML = '<p class="muted">Chưa có lớp, không xem được bài tập.</p>'; return; }
+  box.innerHTML = '<p class="muted">Đang tải...</p>';
+
+  supabaseClient.from('wm_session_classes').select('session_id').eq('class_id', currentStudent.class_id)
+    .then(function(linkRes) {
+      if (linkRes.error) { box.innerHTML = '<p class="muted">Không tải được danh sách bài tập.</p>'; return; }
+      var sessionIds = (linkRes.data || []).map(function(r) { return r.session_id; });
+      if (sessionIds.length === 0) { box.innerHTML = '<p class="muted">Chưa có bài tập Wordwall nào được giao cho lớp của em.</p>'; return; }
+
+      supabaseClient.from('sessions').select('id, topic, date, rows').in('id', sessionIds).order('id', { ascending: false })
+        .then(function(res) {
+          if (res.error) { box.innerHTML = '<p class="muted">Không tải được danh sách bài tập.</p>'; return; }
+          renderWordwallSessions(res.data || []);
+        });
+    });
+}
+
+function renderWordwallSessions(sessions) {
+  var box = document.getElementById('wordwallSessionsList');
+  if (sessions.length === 0) { box.innerHTML = '<p class="muted">Chưa có bài tập Wordwall nào được giao cho lớp của em.</p>'; return; }
+
+  var html = '';
+  for (var i = 0; i < sessions.length; i++) {
+    var s = sessions[i];
+    var rows = [];
+    try { rows = typeof s.rows === 'string' ? JSON.parse(s.rows) : (s.rows || []); } catch (e) { rows = []; }
+
+    html += '<div class="sub-item" style="cursor:default;">';
+    html += '<div class="sub-item-header"><div><b>📚 ' + escapeHtml(s.topic) + '</b></div>';
+    html += '<span class="muted">' + formatDate(s.date) + '</span></div>';
+
+    for (var j = 0; j < rows.length; j++) {
+      var r = rows[j];
+      if (!r.name && !r.play) continue;
+      html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #232b45;display:flex;align-items:center;justify-content:space-between;gap:10px;">';
+      html += '<span>' + (j + 1) + '. ' + escapeHtml(r.name || '') + '</span>';
+      if (r.play) {
+        html += '<a href="' + escapeHtml(r.play) + '" target="_blank" class="btn-primary btn-sm" style="text-decoration:none;white-space:nowrap;">▶️ Chơi ngay</a>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
 }
 
 function openChangePwModal() { document.getElementById('changePwModal').classList.remove('hidden'); }
@@ -628,10 +690,18 @@ function renderAssignmentPreview() {
   if (chosen && chosen.type === 'reading' && chosen.reading_text) {
     document.getElementById('readingTextPreviewLabel').textContent = 'Đọc đúng đoạn này:';
     document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
+    var modelAudioEl = document.getElementById('readingModelAudio');
+    if (chosen.content_audio_url) {
+      modelAudioEl.src = chosen.content_audio_url;
+      modelAudioEl.classList.remove('hidden');
+    } else {
+      modelAudioEl.classList.add('hidden');
+    }
     readingBlock.classList.remove('hidden');
   } else if (chosen && (chosen.type === 'ielts_part1' || chosen.type === 'ielts_part3') && chosen.questions_text) {
     document.getElementById('readingTextPreviewLabel').textContent = 'Trả lời lần lượt các câu hỏi sau (ghi âm liên tục):';
     document.getElementById('readingTextPreviewContent').textContent = chosen.questions_text;
+    document.getElementById('readingModelAudio').classList.add('hidden');
     readingBlock.classList.remove('hidden');
   } else {
     readingBlock.classList.add('hidden');

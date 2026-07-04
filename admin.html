@@ -326,6 +326,10 @@
         <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
         <button type="button" class="btn-secondary btn-sm" style="margin-top:8px;" onclick="extractReadingTextFromImage()">🤖 Lấy chữ từ ảnh đề bài (nếu đã tải ảnh ở trên)</button>
         <p class="muted hidden" id="readingOcrStatusText" style="margin-top:6px;"></p>
+
+        <label style="margin-top:14px;">🎵 File âm thanh mẫu (tùy chọn — học sinh nghe trước khi tự đọc, để luyện phát âm những từ chưa quen)</label>
+        <label class="file-input-label" id="readingAudioLabel" for="readingAudioInput">🎵 Bấm để chọn file âm thanh mẫu</label>
+        <input type="file" id="readingAudioInput" accept="audio/*" onchange="onReadingAudioSelected()">
       </div>
       <div id="questionsTextBlock" class="hidden">
         <label>Danh sách câu hỏi (mỗi câu 1 dòng — học sinh sẽ đọc và trả lời lần lượt trong 1 lần ghi âm)</label>
@@ -1764,6 +1768,20 @@ function applyExtractedSections(data, statusEl, appendMode) {
   statusEl.textContent = '✅ Đã tách được ' + newSections.length + ' phần, kiểm tra lại bên dưới, gắn âm thanh/ảnh cho từng phần nghe nếu cần, rồi mới lưu.';
 }
 
+function onReadingAudioSelected() {
+  var input = document.getElementById('readingAudioInput');
+  var label = document.getElementById('readingAudioLabel');
+  if (input.files && input.files.length > 0) {
+    selectedAssignmentAudio = input.files[0];
+    label.textContent = '✅ ' + selectedAssignmentAudio.name;
+    label.classList.add('has-file');
+  } else {
+    selectedAssignmentAudio = null;
+    label.textContent = '🎵 Bấm để chọn file âm thanh mẫu';
+    label.classList.remove('has-file');
+  }
+}
+
 function extractReadingTextFromImage() {
   if (!selectedAssignmentImage) { showToast('Chưa có ảnh đề bài — tải ảnh lên ở ô "Ảnh đề bài" phía trên trước đã.'); return; }
   var statusText = document.getElementById('readingOcrStatusText');
@@ -2055,6 +2073,10 @@ function addAssignment() {
     document.getElementById('newAssignmentDueDate').value = '';
     document.getElementById('newAssignmentReadingText').value = '';
     document.getElementById('newAssignmentQuestionsText').value = '';
+    selectedAssignmentAudio = null;
+    document.getElementById('readingAudioInput').value = '';
+    document.getElementById('readingAudioLabel').textContent = '🎵 Bấm để chọn file âm thanh mẫu';
+    document.getElementById('readingAudioLabel').classList.remove('has-file');
     document.getElementById('pasteQuestionsArea').value = '';
     document.getElementById('pasteQuestionsStatusText').classList.add('hidden');
     setAssignmentImageFile(null);
