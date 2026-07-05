@@ -820,7 +820,7 @@ function submitVideo() {
   var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
   if (assignmentId && submittedAssignmentIds[assignmentId]) {
     var alertBox = document.getElementById('submitAlertBox');
-    alertBox.textContent = '⚠️ Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được. Muốn làm lại, vào "Bài đã nộp" xóa bài cũ trước.';
+    alertBox.textContent = '⚠️ Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được.';
     alertBox.classList.remove('hidden');
     return;
   }
