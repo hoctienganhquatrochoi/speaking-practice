@@ -136,42 +136,6 @@
     z-index: 999; max-width: 90%; text-align: center;
   }
   .muted { color: #8891a8; font-size: 13px; }
-
-  /* Thanh cuon ro rang hon tren nen toi, tranh hoc sinh khong biet co the cuon */
-  .scrollbox {
-    scrollbar-width: thin;
-    scrollbar-color: #4c6fff #0f1420;
-  }
-  .scrollbox::-webkit-scrollbar { width: 9px; }
-  .scrollbox::-webkit-scrollbar-track { background: #0f1420; border-radius: 8px; }
-  .scrollbox::-webkit-scrollbar-thumb { background: #3a4568; border-radius: 8px; }
-  .scrollbox::-webkit-scrollbar-thumb:hover { background: #4c6fff; }
-
-  /* Dap an trac nghiem: xep hang ngang dang o vuong, khong hien lai chu cai ABCD de tranh trung lap khi xao tron */
-  .mc-options-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 4px;
-  }
-  @media (max-width: 420px) {
-    .mc-options-grid { grid-template-columns: 1fr; }
-  }
-  .mc-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid #2a3350;
-    border-radius: 10px;
-    padding: 10px 12px;
-    cursor: pointer;
-    font-weight: normal;
-    margin: 0;
-    background: #0f1420;
-  }
-  .mc-option input[type=radio] { width: 16px; height: 16px; flex-shrink: 0; }
-  .mc-option.selected { border-color: #4c6fff; background: #1b2540; }
-  .mc-option span { line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -205,12 +169,9 @@
   </div>
 
   <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <h2 style="margin:0;">Nộp bài mới</h2>
-      <button class="btn-secondary btn-sm" onclick="refreshAssignmentsList()">🔄 Làm mới</button>
-    </div>
+    <h2>Nộp bài mới</h2>
 
-    <div class="hidden" id="assignmentBlock" style="margin-top:14px;">
+    <div class="hidden" id="assignmentBlock">
       <p class="banner-title">📋 Các bài tập cần hoàn thành</p>
       <select id="assignmentSelect" onchange="onAssignmentChange()"></select>
       <button class="btn-gradient-blue btn-sm" id="toggleFreeModeBtn" style="margin-top:10px;padding:10px 16px;" onclick="toggleFreeMode(true)">Tự chọn nội dung luyện tập</button>
@@ -254,17 +215,12 @@
       <p class="muted">Ảnh đề bài của bài giao này:</p>
       <img id="assignmentImagePreviewImg" style="max-width:100%;border-radius:10px;">
     </div>
-    <div id="readingTextPreview" class="hidden scrollbox" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
+    <div id="readingTextPreview" class="hidden" style="margin-top:10px;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;max-height:220px;overflow-y:auto;">
       <p class="muted" id="readingTextPreviewLabel" style="margin:0 0 6px 0;position:sticky;top:0;background:#0f1420;">Đọc đúng đoạn này:</p>
-      <audio id="readingModelAudio" controls class="hidden" style="width:100%;margin-bottom:10px;"></audio>
       <p id="readingTextPreviewContent" style="margin:0;line-height:1.6;font-size:15px;white-space:pre-wrap;"></p>
     </div>
 
     <div id="audioSubmitBlock">
-      <div id="audioSubmitLockedMsg" class="hidden" style="margin-top:16px;padding:16px;background:#171d2e;border-radius:10px;border:1px solid #2a3350;text-align:center;">
-        <p style="margin:0;font-size:16px;">✅ Bài này em đã nộp rồi, không nộp lại được nữa nhé.</p>
-        <p class="muted" style="margin:6px 0 0 0;">Xem điểm và nhận xét ở mục "Bài đã nộp" bên dưới.</p>
-      </div>
       <div id="recordBlock" style="margin-top:20px;padding-top:16px;border-top:1px solid #232b45;">
         <label>🎙️ Đọc/nói đúng nội dung ở trên, rồi ghi âm tại đây</label>
         <div class="row" style="gap:10px;">
@@ -277,7 +233,7 @@
         </div>
       </div>
 
-      <div id="audioSubmitAltBlock" style="margin-top:16px;">
+      <div style="margin-top:16px;">
         <label>Hoặc chọn file ghi âm có sẵn trong máy</label>
         <label class="file-input-label" id="fileLabel" for="audioFileInput">🎵 Bấm để chọn file ghi âm</label>
         <input type="file" id="audioFileInput" accept="audio/*" onchange="onFileSelected()">
@@ -288,7 +244,12 @@
     </div>
 
     <div id="comprehensionQuizBlock" class="hidden" style="margin-top:16px;">
-      <div id="comprehensionSectionsBox"></div>
+      <div id="comprehensionContentBox" style="max-height:280px;overflow-y:auto;padding:12px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;margin-bottom:14px;">
+        <audio id="comprehensionAudio" controls class="hidden" style="width:100%;margin-bottom:10px;"></audio>
+        <img id="comprehensionImage" class="hidden" style="max-width:100%;border-radius:8px;margin-bottom:10px;">
+        <p id="comprehensionPassageText" style="white-space:pre-wrap;line-height:1.6;margin:0;"></p>
+      </div>
+      <div id="comprehensionQuestionsBox"></div>
       <button class="btn-primary" id="submitComprehensionBtn" style="width:100%;margin-top:16px;" onclick="submitComprehensionAnswers()">Nộp bài</button>
       <div id="comprehensionResultBox" class="hidden" style="margin-top:16px;"></div>
     </div>
@@ -301,14 +262,6 @@
     </div>
     <p class="muted" style="margin-top:4px;">Bài "Đang chấm" sẽ tự động cập nhật, không cần bấm nút này.</p>
     <div id="submissionsList" style="margin-top:14px;"></div>
-  </div>
-
-  <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <h2 style="margin:0;">📚 Bài tập Wordwall</h2>
-      <button class="btn-secondary btn-sm" onclick="loadWordwallSessions()">🔄 Làm mới</button>
-    </div>
-    <div id="wordwallSessionsList" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -429,59 +382,6 @@ function showMainApp() {
   document.getElementById('welcomeName').textContent = '🎤 Chào ' + currentStudent.name;
   loadSubmissions(); // tải trước để biết bài giao nào đã nộp rồi
   loadAssignments();
-  loadWordwallSessions();
-}
-
-// =====================================================
-// WORDWALL — hien thi buoi hoc duoc gan cho dung lop cua hoc sinh
-// (du lieu tao ben trang Wordwall Manager, chi doc lai o day)
-// =====================================================
-function loadWordwallSessions() {
-  var box = document.getElementById('wordwallSessionsList');
-  if (!currentStudent.class_id) { box.innerHTML = '<p class="muted">Chưa có lớp, không xem được bài tập.</p>'; return; }
-  box.innerHTML = '<p class="muted">Đang tải...</p>';
-
-  supabaseClient.from('wm_session_classes').select('session_id').eq('class_id', currentStudent.class_id)
-    .then(function(linkRes) {
-      if (linkRes.error) { box.innerHTML = '<p class="muted">Không tải được danh sách bài tập.</p>'; return; }
-      var sessionIds = (linkRes.data || []).map(function(r) { return r.session_id; });
-      if (sessionIds.length === 0) { box.innerHTML = '<p class="muted">Chưa có bài tập Wordwall nào được giao cho lớp của em.</p>'; return; }
-
-      supabaseClient.from('sessions').select('id, topic, date, rows').in('id', sessionIds).order('id', { ascending: false })
-        .then(function(res) {
-          if (res.error) { box.innerHTML = '<p class="muted">Không tải được danh sách bài tập.</p>'; return; }
-          renderWordwallSessions(res.data || []);
-        });
-    });
-}
-
-function renderWordwallSessions(sessions) {
-  var box = document.getElementById('wordwallSessionsList');
-  if (sessions.length === 0) { box.innerHTML = '<p class="muted">Chưa có bài tập Wordwall nào được giao cho lớp của em.</p>'; return; }
-
-  var html = '';
-  for (var i = 0; i < sessions.length; i++) {
-    var s = sessions[i];
-    var rows = [];
-    try { rows = typeof s.rows === 'string' ? JSON.parse(s.rows) : (s.rows || []); } catch (e) { rows = []; }
-
-    html += '<div class="sub-item" style="cursor:default;">';
-    html += '<div class="sub-item-header"><div><b>📚 ' + escapeHtml(s.topic) + '</b></div>';
-    html += '<span class="muted">' + formatDate(s.date) + '</span></div>';
-
-    for (var j = 0; j < rows.length; j++) {
-      var r = rows[j];
-      if (!r.name && !r.play) continue;
-      html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #232b45;display:flex;align-items:center;justify-content:space-between;gap:10px;">';
-      html += '<span>' + (j + 1) + '. ' + escapeHtml(r.name || '') + '</span>';
-      if (r.play) {
-        html += '<a href="' + escapeHtml(r.play) + '" target="_blank" class="btn-primary btn-sm" style="text-decoration:none;white-space:nowrap;">▶️ Chơi ngay</a>';
-      }
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  box.innerHTML = html;
 }
 
 function openChangePwModal() { document.getElementById('changePwModal').classList.remove('hidden'); }
@@ -505,12 +405,6 @@ function saveNewPassword() {
 // =====================================================
 var submittedAssignmentIds = {};
 var useFreeMode = false;
-
-function refreshAssignmentsList() {
-  showToast('Đang làm mới danh sách bài tập...');
-  loadAssignments();
-  loadSubmissions();
-}
 
 function loadAssignments() {
   if (!currentStudent.class_id) return;
@@ -662,7 +556,7 @@ function renderAssignmentPreview() {
     if (currentAssignments[i].id === assignmentId) { chosen = currentAssignments[i]; break; }
   }
 
-  var isComprehension = false; // da tat tinh nang Doc hieu/Nghe hieu, quay ve dung ban don gian
+  var isComprehension = chosen && (chosen.type === 'listening' || chosen.type === 'reading_comprehension');
 
   if (chosen && chosen.description) {
     document.getElementById('assignmentDescriptionPreviewContent').textContent = chosen.description;
@@ -684,8 +578,6 @@ function renderAssignmentPreview() {
   audioSubmitBlock.classList.remove('hidden');
   comprehensionBlock.classList.add('hidden');
 
-  setAudioSubmitLocked(false);
-
   if (chosen && chosen.reference_image_url) {
     document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
     previewBlock.classList.remove('hidden');
@@ -696,18 +588,10 @@ function renderAssignmentPreview() {
   if (chosen && chosen.type === 'reading' && chosen.reading_text) {
     document.getElementById('readingTextPreviewLabel').textContent = 'Đọc đúng đoạn này:';
     document.getElementById('readingTextPreviewContent').textContent = chosen.reading_text;
-    var modelAudioEl = document.getElementById('readingModelAudio');
-    if (chosen.content_audio_url) {
-      modelAudioEl.src = chosen.content_audio_url;
-      modelAudioEl.classList.remove('hidden');
-    } else {
-      modelAudioEl.classList.add('hidden');
-    }
     readingBlock.classList.remove('hidden');
   } else if (chosen && (chosen.type === 'ielts_part1' || chosen.type === 'ielts_part3') && chosen.questions_text) {
     document.getElementById('readingTextPreviewLabel').textContent = 'Trả lời lần lượt các câu hỏi sau (ghi âm liên tục):';
     document.getElementById('readingTextPreviewContent').textContent = chosen.questions_text;
-    document.getElementById('readingModelAudio').classList.add('hidden');
     readingBlock.classList.remove('hidden');
   } else {
     readingBlock.classList.add('hidden');
@@ -930,18 +814,10 @@ function submitVideo() {
     return;
   }
   var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
-  proceedSubmitVideo(assignmentId);
-}
-
-function setAudioSubmitLocked(locked) {
-  document.getElementById('audioSubmitLockedMsg').style.display = locked ? 'block' : 'none';
-  document.getElementById('recordBlock').style.display = locked ? 'none' : 'block';
-  document.getElementById('audioSubmitAltBlock').style.display = locked ? 'none' : 'block';
-  document.getElementById('submitBtn').style.display = locked ? 'none' : 'block';
-}
-
-
-function proceedSubmitVideo(assignmentId) {
+  if (assignmentId && submittedAssignmentIds[assignmentId]) {
+    showToast('Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được. Nếu muốn làm lại, vào "Bài đã nộp" xóa bài cũ trước.');
+    return;
+  }
   var practiceType = useFreeMode ? document.getElementById('freePracticeType').value : null;
   var needsTextCapture = practiceType === 'reading' || practiceType === 'ielts_part1' || practiceType === 'ielts_part3';
   var freeReadingText = (useFreeMode && needsTextCapture)
@@ -1032,26 +908,25 @@ function resetUploadForm() {
 function loadSubmissions() {
   var audioQuery = supabaseClient.from('sp_submissions').select('*, sp_scores(*), sp_assignments(type)').eq('student_id', currentStudent.id)
     .order('submitted_at', { ascending: false });
-  var comprehensionQuery = supabaseClient.from('sp_comprehension_submissions').select('*, sp_assignments(topic, type)').eq('student_id', currentStudent.id)
-    .order('submitted_at', { ascending: false });
+  var comprehensionQuery = supabaseClient.from('sp_comprehension_submissions').select('assignment_id').eq('student_id', currentStudent.id);
 
   Promise.all([audioQuery, comprehensionQuery]).then(function(resArr) {
     var res = resArr[0];
     var compRes = resArr[1];
     if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
-
-    var audioList = (res.data || []).map(function(s) { s._kind = 'audio'; return s; });
-    var compList = compRes.error ? [] : (compRes.data || []).map(function(s) { s._kind = 'comprehension'; return s; });
-
-    var merged = audioList.concat(compList);
-    merged.sort(function(a, b) { return new Date(b.submitted_at) - new Date(a.submitted_at); });
-
-    renderSubmissions(merged);
-    scheduleAutoRefresh(audioList); // chi bai ghi am moi co trang thai "processing" can tu dong cham lai
+    var list = res.data || [];
+    renderSubmissions(list);
+    scheduleAutoRefresh(list);
 
     submittedAssignmentIds = {};
-    for (var i = 0; i < merged.length; i++) {
-      if (merged[i].assignment_id) submittedAssignmentIds[merged[i].assignment_id] = true;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].assignment_id) submittedAssignmentIds[list[i].assignment_id] = true;
+    }
+    if (!compRes.error) {
+      var compList = compRes.data || [];
+      for (var j = 0; j < compList.length; j++) {
+        submittedAssignmentIds[compList[j].assignment_id] = true;
+      }
     }
     renderAssignmentDropdown(); // luôn vẽ lại, tránh lỡ nhịp khi 2 lượt tải chạy song song
   });
@@ -1082,25 +957,11 @@ function renderSubmissions(list) {
   var html = '';
   for (var i = 0; i < list.length; i++) {
     var sub = list[i];
-    var dateStr = formatDate(sub.submitted_at);
-
-    if (sub._kind === 'comprehension') {
-      html += '<div class="sub-item" onclick="toggleComprehensionSubDetail(' + i + ')">';
-      html += '<div class="sub-item-header">';
-      html += '<div><b>' + dateStr + '</b> <span class="badge badge-graded">Đọc/Nghe hiểu</span></div>';
-      html += '<div class="row" style="gap:8px;"><button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteComprehensionSubmission(' + i + ')">Xóa</button></div>';
-      html += '</div>';
-      if (sub.sp_assignments && sub.sp_assignments.topic) html += '<div class="muted" style="margin-top:4px;">' + escapeHtml(sub.sp_assignments.topic) + '</div>';
-      html += '<div style="margin-top:8px;" class="score-big">' + sub.total_score + '/' + sub.max_score + '</div>';
-      html += '<div id="detail_' + i + '" class="detail-box hidden" data-loaded="0"></div>';
-      html += '</div>';
-      continue;
-    }
-
     var score = null;
     if (sub.sp_scores) {
       score = Array.isArray(sub.sp_scores) ? sub.sp_scores[0] : sub.sp_scores;
     }
+    var dateStr = formatDate(sub.submitted_at);
 
     var effectiveType = 'presentation';
     if (sub.sp_assignments && sub.sp_assignments.type) effectiveType = sub.sp_assignments.type;
@@ -1161,51 +1022,6 @@ function toggleDetail(index) {
   if (el) el.classList.toggle('hidden');
 }
 
-function deleteComprehensionSubmission(index) {
-  var sub = currentSubmissionsList[index];
-  if (!sub) return;
-  if (!confirm('Xóa bài nộp đọc hiểu/nghe hiểu này? Không thể khôi phục lại.')) return;
-  supabaseClient.from('sp_comprehension_submissions').delete().eq('id', sub.id).then(function(res) {
-    if (res.error) { showToast('Lỗi xóa: ' + res.error.message); return; }
-    showToast('Đã xóa bài nộp');
-    loadSubmissions();
-  });
-}
-
-function toggleComprehensionSubDetail(index) {
-  var sub = currentSubmissionsList[index];
-  var el = document.getElementById('detail_' + index);
-  if (!el || !sub) return;
-  var willShow = el.classList.contains('hidden');
-  el.classList.toggle('hidden');
-  if (!willShow) return;
-  if (el.getAttribute('data-loaded') === '1') return;
-
-  el.innerHTML = '<p class="muted">Đang tải chi tiết...</p>';
-  supabaseClient.functions.invoke('get-comprehension-questions', { body: { assignment_id: sub.assignment_id } })
-    .then(function(res) {
-      var payload = res.data;
-      var sections = (!res.error && payload && payload.sections) ? payload.sections : [];
-      var questions = [];
-      for (var s = 0; s < sections.length; s++) questions = questions.concat(sections[s].questions || []);
-      var resultMap = {};
-      var results = sub.results || [];
-      for (var i = 0; i < results.length; i++) resultMap[results[i].question_id] = results[i];
-
-      var html = '';
-      for (var j = 0; j < questions.length; j++) {
-        var q = questions[j];
-        var r = resultMap[q.id];
-        var icon = r && r.is_correct ? '✅' : '❌';
-        html += '<p style="margin:6px 0 0 0;">' + icon + ' Câu ' + (j + 1) + ': ' + escapeHtml(sanitizeQuestionText(q.question_text)) + '</p>';
-        if (r && r.explanation) html += '<p class="muted" style="margin:2px 0 0 0;">' + escapeHtml(r.explanation) + '</p>';
-      }
-      if (!html) html = '<p class="muted">Không tải được chi tiết câu hỏi.</p>';
-      el.innerHTML = html;
-      el.setAttribute('data-loaded', '1');
-    });
-}
-
 
 function analyzeSubmissionDetailStudent(submissionId, btn) {
   var box = document.getElementById('analysisBox_' + submissionId);
@@ -1262,43 +1078,32 @@ function renderAnalysisResultStudent(box, data) {
 var currentComprehensionAssignment = null;
 var currentComprehensionQuestions = [];
 
-// Bo so thu tu/nhan chu dư thừa dinh trong du lieu cu (truoc khi ben admin them buoc lam sach),
-// tranh hien "Câu 1: 1. ..." hoac dap an con dinh chu cai "a. Birds"
-function sanitizeQuestionText(text) {
-  if (!text) return '';
-  var t = String(text).trim();
-  t = t.replace(/^\s*(?:câu|cau|question)?\s*\d{1,2}\s*[\.\):]\s*/i, '');
-  return t.trim();
-}
-function sanitizeOptionText(text) {
-  if (!text) return '';
-  var t = String(text).trim();
-  var prev;
-  do {
-    prev = t;
-    t = t.replace(/^\s*[A-Da-d]\s*[\.\):]\s*/, '');
-  } while (t !== prev);
-  return t.trim();
-}
-function shuffleArray(arr) {
-  var a = arr.slice();
-  for (var i = a.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-  }
-  return a;
-}
-
-var currentComprehensionSections = [];
-
 function loadComprehensionQuiz(assignment) {
   currentComprehensionAssignment = assignment;
-  sectionRecorders = {};
+
+  var audioEl = document.getElementById('comprehensionAudio');
+  var imgEl = document.getElementById('comprehensionImage');
+  var passageEl = document.getElementById('comprehensionPassageText');
+
+  if (assignment.content_audio_url) {
+    audioEl.src = assignment.content_audio_url;
+    audioEl.classList.remove('hidden');
+  } else {
+    audioEl.classList.add('hidden');
+  }
+  if (assignment.reference_image_url) {
+    imgEl.src = assignment.reference_image_url;
+    imgEl.classList.remove('hidden');
+  } else {
+    imgEl.classList.add('hidden');
+  }
+  passageEl.textContent = assignment.passage_text || '';
+
   document.getElementById('comprehensionResultBox').classList.add('hidden');
-  document.getElementById('comprehensionResultBox').innerHTML = '';
-  document.getElementById('comprehensionSectionsBox').innerHTML = '<p class="muted">Đang tải bài...</p>';
+  document.getElementById('comprehensionQuestionsBox').innerHTML = '<p class="muted">Đang tải câu hỏi...</p>';
   document.getElementById('submitComprehensionBtn').classList.remove('hidden');
 
+  // Kiểm tra đã làm bài này chưa
   supabaseClient.from('sp_comprehension_submissions').select('*').eq('assignment_id', assignment.id).eq('student_id', currentStudent.id)
     .maybeSingle().then(function(subRes) {
       if (subRes.data) {
@@ -1309,192 +1114,63 @@ function loadComprehensionQuiz(assignment) {
     });
 }
 
-function loadComprehensionQuestions(assignmentId, callback) {
+function loadComprehensionQuestions(assignmentId) {
   supabaseClient.functions.invoke('get-comprehension-questions', {
     body: { assignment_id: assignmentId }
   }).then(function(res) {
     if (res.error) {
-      document.getElementById('comprehensionSectionsBox').innerHTML = '<p style="color:#ff9db0;">Lỗi tải câu hỏi: ' + escapeHtml(res.error.message) + '</p>';
+      document.getElementById('comprehensionQuestionsBox').innerHTML = '<p style="color:#ff9db0;">Lỗi tải câu hỏi: ' + escapeHtml(res.error.message) + '</p>';
       return;
     }
     var payload = res.data;
     if (!payload || payload.error) {
-      document.getElementById('comprehensionSectionsBox').innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
+      document.getElementById('comprehensionQuestionsBox').innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
       return;
     }
-    currentComprehensionSections = payload.sections || [];
-    if (callback) { callback(); } else { renderComprehensionSections(); }
+    currentComprehensionQuestions = payload.questions || [];
+    renderComprehensionQuestions();
   });
 }
 
-function renderComprehensionSections() {
-  var box = document.getElementById('comprehensionSectionsBox');
-  box.classList.remove('hidden');
-  if (currentComprehensionSections.length === 0) {
+function renderComprehensionQuestions() {
+  var box = document.getElementById('comprehensionQuestionsBox');
+  if (currentComprehensionQuestions.length === 0) {
     box.innerHTML = '<p class="muted">Bài này chưa có câu hỏi</p>';
     return;
   }
   var html = '';
-  for (var s = 0; s < currentComprehensionSections.length; s++) {
-    var sec = currentComprehensionSections[s];
-    html += '<div class="scrollbox" style="margin-bottom:18px;padding:14px;background:#0f1420;border-radius:10px;border:1px solid #2a3350;">';
-    if (sec.title) html += '<p style="font-weight:700;color:#9db4ff;margin:0 0 6px 0;">' + escapeHtml(sec.title) + '</p>';
-    if (sec.instruction) html += '<p class="muted" style="margin:0 0 10px 0;font-style:italic;">' + escapeHtml(sec.instruction) + '</p>';
-    if (sec.image_url) html += '<img src="' + sec.image_url + '" style="max-width:100%;border-radius:8px;margin-bottom:10px;display:block;">';
-    if (sec.audio_url) html += '<audio controls src="' + sec.audio_url + '" style="width:100%;margin-bottom:10px;"></audio>';
-    if (sec.passage_text) html += '<p style="white-space:pre-wrap;line-height:1.8;font-size:17px;margin:0 0 12px 0;">' + escapeHtml(sec.passage_text) + '</p>';
+  for (var i = 0; i < currentComprehensionQuestions.length; i++) {
+    var q = currentComprehensionQuestions[i];
+    html += '<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #232b45;">';
+    html += '<p style="font-weight:600;margin:0 0 8px 0;">Câu ' + (i + 1) + ': ' + escapeHtml(q.question_text) + '</p>';
 
-    if (sec.requires_reading_recording) {
-      html += '<div style="margin:10px 0 16px 0;padding:12px;background:#171d2e;border-radius:10px;border:1px solid #2a3350;">';
-      html += '<p style="font-weight:600;margin:0 0 8px 0;">🎙️ Đọc to đoạn văn ở trên, rồi ghi âm tại đây</p>';
-      html += '<button class="btn-primary btn-sm" id="sectionRecBtn_' + sec.id + '" onclick="toggleSectionRecording(\'' + sec.id + '\')">🎙️ Bắt đầu ghi âm</button>';
-      html += ' <span class="muted" id="sectionRecTimer_' + sec.id + '" class="hidden"></span>';
-      html += '<audio id="sectionRecPlayback_' + sec.id + '" controls class="hidden" style="display:block;width:100%;margin-top:8px;"></audio>';
-      html += '</div>';
-    }
-
-    for (var qi = 0; qi < sec.questions.length; qi++) {
-      html += renderOneQuestionHtml(sec.questions[qi], qi);
+    if (q.question_type === 'multiple_choice') {
+      var opts = [['a', q.option_a], ['b', q.option_b], ['c', q.option_c], ['d', q.option_d]];
+      for (var o = 0; o < opts.length; o++) {
+        if (!opts[o][1]) continue;
+        html += '<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:normal;cursor:pointer;">';
+        html += '<input type="radio" name="q_' + q.id + '" value="' + opts[o][0] + '" style="width:auto;">';
+        html += '<span>' + opts[o][0].toUpperCase() + '. ' + escapeHtml(opts[o][1]) + '</span>';
+        html += '</label>';
+      }
+    } else {
+      html += '<textarea id="answer_' + q.id + '" rows="2" placeholder="Nhập câu trả lời..."></textarea>';
     }
     html += '</div>';
   }
   box.innerHTML = html;
 }
 
-var sectionRecorders = {};
-
-function toggleSectionRecording(sectionId) {
-  var existing = sectionRecorders[sectionId];
-  if (existing && existing.mediaRecorder && existing.mediaRecorder.state === 'recording') {
-    existing.mediaRecorder.stop();
-    return;
-  }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('Trình duyệt này không hỗ trợ ghi âm.');
-    return;
-  }
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-    var chunks = [];
-    var mimeType = pickRecorderMimeType();
-    var options = mimeType ? { mimeType: mimeType } : undefined;
-    var mediaRecorder;
-    try { mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream); }
-    catch (e) { mediaRecorder = new MediaRecorder(stream); }
-
-    mediaRecorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
-    mediaRecorder.onstop = function() {
-      var blobType = mediaRecorder.mimeType || 'audio/webm';
-      var blob = new Blob(chunks, { type: blobType });
-      if (sectionRecorders[sectionId]) sectionRecorders[sectionId].blob = blob;
-      var audioEl = document.getElementById('sectionRecPlayback_' + sectionId);
-      if (audioEl) { audioEl.src = URL.createObjectURL(blob); audioEl.classList.remove('hidden'); }
-      var btn = document.getElementById('sectionRecBtn_' + sectionId);
-      if (btn) btn.textContent = '🔁 Ghi lại';
-      stream.getTracks().forEach(function(t) { t.stop(); });
-    };
-
-    sectionRecorders[sectionId] = { mediaRecorder: mediaRecorder, blob: null };
-    mediaRecorder.start();
-    var btn = document.getElementById('sectionRecBtn_' + sectionId);
-    if (btn) btn.textContent = '⏹️ Dừng ghi âm';
-  }).catch(function(err) {
-    showToast('Không mở được micro, kiểm tra quyền truy cập micro cho trình duyệt nhé.');
-  });
-}
-
-function renderOneQuestionHtml(q, qi) {
-  var cleanQuestionText = sanitizeQuestionText(q.question_text);
-  var html = '<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #232b45;">';
-  html += '<p style="font-weight:600;margin:0 0 8px 0;">Câu ' + (qi + 1) + ': ' + escapeHtml(cleanQuestionText) + '</p>';
-
-  if (q.question_type === 'multiple_choice') {
-    var optsRaw = [['a', q.option_a], ['b', q.option_b], ['c', q.option_c], ['d', q.option_d]];
-    var opts = optsRaw.filter(function(o) { return o[1]; });
-    if (!q._shuffledOpts) q._shuffledOpts = shuffleArray(opts);
-    var displayOpts = q._shuffledOpts;
-
-    html += '<div class="mc-options-grid">';
-    for (var o = 0; o < displayOpts.length; o++) {
-      var letter = displayOpts[o][0];
-      var optText = sanitizeOptionText(displayOpts[o][1]);
-      var inputId = 'opt_' + q.id + '_' + letter;
-      html += '<label class="mc-option" for="' + inputId + '">';
-      html += '<input type="radio" id="' + inputId + '" name="q_' + q.id + '" value="' + letter + '" onchange="onMcOptionChange(this)">';
-      html += '<span>' + escapeHtml(optText) + '</span>';
-      html += '</label>';
-    }
-    html += '</div>';
-  } else if (q.question_type === 'matching') {
-    var lefts = q.matching_left || [];
-    var rights = q.matching_right_shuffled || [];
-    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
-    for (var li = 0; li < lefts.length; li++) {
-      html += '<div class="row" style="gap:10px;align-items:center;flex-wrap:nowrap;">';
-      html += '<div class="grow" style="background:#0f1420;border:1px solid #2a3350;border-radius:10px;padding:10px 12px;">' + escapeHtml(lefts[li].text) + '</div>';
-      html += '<select id="match_' + q.id + '_' + lefts[li].id + '" style="width:auto;min-width:140px;">';
-      html += '<option value="">— chọn —</option>';
-      for (var ri = 0; ri < rights.length; ri++) {
-        html += '<option value="' + rights[ri].id + '">' + escapeHtml(rights[ri].text) + '</option>';
-      }
-      html += '</select>';
-      html += '</div>';
-    }
-    html += '</div>';
-  } else {
-    html += '<textarea id="answer_' + q.id + '" rows="2" placeholder="Nhập câu trả lời..."></textarea>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function onMcOptionChange(radioEl) {
-  var group = document.getElementsByName(radioEl.name);
-  for (var i = 0; i < group.length; i++) {
-    var lbl = group[i].closest('label');
-    if (lbl) lbl.classList.toggle('selected', group[i].checked);
-  }
-}
-
-function getAllComprehensionQuestions() {
-  var all = [];
-  for (var s = 0; s < currentComprehensionSections.length; s++) {
-    all = all.concat(currentComprehensionSections[s].questions);
-  }
-  return all;
-}
-
 function submitComprehensionAnswers() {
-  var allQuestions = getAllComprehensionQuestions();
-  if (allQuestions.length === 0) { showToast('Chưa có câu hỏi để nộp'); return; }
-
-  var missingRecordingSections = [];
-  for (var s = 0; s < currentComprehensionSections.length; s++) {
-    var sec = currentComprehensionSections[s];
-    if (sec.requires_reading_recording) {
-      var rec = sectionRecorders[sec.id];
-      if (!rec || !rec.blob) missingRecordingSections.push(sec.title || 'phần đọc');
-    }
-  }
-  if (missingRecordingSections.length > 0) {
-    if (!confirm('Em chưa ghi âm phần đọc: ' + missingRecordingSections.join(', ') + '. Vẫn nộp bài chứ?')) return;
-  }
+  if (currentComprehensionQuestions.length === 0) { showToast('Chưa có câu hỏi để nộp'); return; }
 
   var answers = [];
-  for (var i = 0; i < allQuestions.length; i++) {
-    var q = allQuestions[i];
-    var ans = null;
+  for (var i = 0; i < currentComprehensionQuestions.length; i++) {
+    var q = currentComprehensionQuestions[i];
+    var ans = '';
     if (q.question_type === 'multiple_choice') {
       var checked = document.querySelector('input[name="q_' + q.id + '"]:checked');
       ans = checked ? checked.value : '';
-    } else if (q.question_type === 'matching') {
-      var pairs = [];
-      var lefts = q.matching_left || [];
-      for (var li = 0; li < lefts.length; li++) {
-        var sel = document.getElementById('match_' + q.id + '_' + lefts[li].id);
-        var rightVal = sel ? sel.value : '';
-        if (rightVal) pairs.push({ left_id: lefts[li].id, right_id: rightVal });
-      }
-      ans = pairs;
     } else {
       var ta = document.getElementById('answer_' + q.id);
       ans = ta ? ta.value.trim() : '';
@@ -1504,127 +1180,55 @@ function submitComprehensionAnswers() {
 
   var btn = document.getElementById('submitComprehensionBtn');
   btn.disabled = true;
-  btn.textContent = 'Đang tải bài ghi âm lên...';
+  btn.textContent = 'Đang chấm bài...';
 
-  var recordingsToUpload = [];
-  for (var s2 = 0; s2 < currentComprehensionSections.length; s2++) {
-    var sec2 = currentComprehensionSections[s2];
-    var rec2 = sectionRecorders[sec2.id];
-    if (sec2.requires_reading_recording && rec2 && rec2.blob) {
-      recordingsToUpload.push({ section_id: sec2.id, blob: rec2.blob });
-    }
-  }
+  supabaseClient.functions.invoke('grade-comprehension', {
+    body: { assignment_id: currentComprehensionAssignment.id, student_id: currentStudent.id, answers: answers }
+  }).then(function(res) {
+    btn.disabled = false;
+    btn.textContent = 'Nộp bài';
+    if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
+    var payload = res.data;
+    if (!payload || payload.error) { showToast('Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi')); return; }
 
-  function uploadNext(index, results) {
-    if (index >= recordingsToUpload.length) {
-      finishSubmit(results);
-      return;
-    }
-    var item = recordingsToUpload[index];
-    var ext = (item.blob.type && item.blob.type.indexOf('mp4') !== -1) ? 'm4a' : 'webm';
-    var path = currentStudent.id + '/section_' + item.section_id + '_' + Date.now() + '.' + ext;
-    supabaseClient.storage.from('speaking-videos').upload(path, item.blob, { contentType: item.blob.type || 'audio/webm' })
-      .then(function(uploadRes) {
-        if (!uploadRes.error) {
-          var urlRes = supabaseClient.storage.from('speaking-videos').getPublicUrl(path);
-          results.push({ section_id: item.section_id, audio_url: urlRes.data.publicUrl });
-        }
-        uploadNext(index + 1, results);
-      });
-  }
-
-  function finishSubmit(sectionRecordings) {
-    btn.textContent = 'Đang chấm bài...';
-    supabaseClient.functions.invoke('grade-comprehension', {
-      body: { assignment_id: currentComprehensionAssignment.id, student_id: currentStudent.id, answers: answers, section_recordings: sectionRecordings }
-    }).then(function(res) {
-      btn.disabled = false;
-      btn.textContent = 'Nộp bài';
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      var payload = res.data;
-      if (!payload || payload.error) { showToast('Lỗi: ' + ((payload && payload.error) || 'Không rõ lỗi')); return; }
-
-      document.getElementById('comprehensionSectionsBox').classList.add('hidden');
-      btn.classList.add('hidden');
-      showComprehensionResult(payload.total_score, payload.max_score, payload.results, payload.reading_scores);
-      loadSubmissions();
-      loadAssignments();
-    }).catch(function(err) {
-      btn.disabled = false;
-      btn.textContent = 'Nộp bài';
-      showToast('Lỗi: ' + String(err));
-    });
-  }
-
-  uploadNext(0, []);
+    showComprehensionResult(payload.total_score, payload.max_score, payload.results);
+    btn.classList.add('hidden');
+    loadSubmissions(); // để cập nhật dấu "Đã nộp"
+    loadAssignments();
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Nộp bài';
+    showToast('Lỗi: ' + String(err));
+  });
 }
 
-function showComprehensionResult(totalScore, maxScore, results, readingScores) {
+function showComprehensionResult(totalScore, maxScore, results) {
   var box = document.getElementById('comprehensionResultBox');
   var resultMap = {};
   for (var i = 0; i < results.length; i++) resultMap[results[i].question_id] = results[i];
 
-  var html = '';
-  if (readingScores && readingScores.length > 0) {
-    for (var rs = 0; rs < readingScores.length; rs++) {
-      var sec = null;
-      for (var si = 0; si < currentComprehensionSections.length; si++) {
-        if (currentComprehensionSections[si].id === readingScores[rs].section_id) { sec = currentComprehensionSections[si]; break; }
-      }
-      html += '<div style="margin-bottom:14px;padding:12px;background:#171d2e;border-radius:10px;border:1px solid #2a3350;">';
-      html += '<p class="muted" style="margin:0 0 4px 0;">🎙️ Điểm đọc' + (sec && sec.title ? ' — ' + escapeHtml(sec.title) : '') + '</p>';
-      html += '<div class="score-big" style="font-size:28px;">' + (readingScores[rs].score !== null && readingScores[rs].score !== undefined ? readingScores[rs].score : '—') + '<span style="font-size:16px;">/10</span></div>';
-      if (readingScores[rs].feedback) html += '<p style="margin:6px 0 0 0;">' + escapeHtml(readingScores[rs].feedback) + '</p>';
-      html += '</div>';
-    }
-  }
-
-  var allQuestions = getAllComprehensionQuestions();
-  html += '<div class="score-big" style="margin-bottom:14px;">Điểm đọc hiểu: ' + totalScore + '/' + maxScore + '</div>';
-  for (var j = 0; j < allQuestions.length; j++) {
-    var q = allQuestions[j];
+  var html = '<div class="score-big" style="margin-bottom:14px;">Điểm: ' + totalScore + '/' + maxScore + '</div>';
+  for (var j = 0; j < currentComprehensionQuestions.length; j++) {
+    var q = currentComprehensionQuestions[j];
     var r = resultMap[q.id];
     var icon = r && r.is_correct ? '✅' : '❌';
     html += '<div style="margin-bottom:10px;">';
-    html += '<p style="margin:0;">' + icon + ' Câu ' + (j + 1) + ': ' + escapeHtml(sanitizeQuestionText(q.question_text)) + '</p>';
+    html += '<p style="margin:0;">' + icon + ' Câu ' + (j + 1) + ': ' + escapeHtml(q.question_text) + '</p>';
     if (r && r.explanation) html += '<p class="muted" style="margin:4px 0 0 0;">' + escapeHtml(r.explanation) + '</p>';
     html += '</div>';
   }
-  html += '<button class="btn-secondary" style="width:100%;margin-top:14px;" onclick="retryComprehensionQuiz()">🔁 Làm lại bài này</button>';
   box.innerHTML = html;
   box.classList.remove('hidden');
 }
 
-function retryComprehensionQuiz() {
-  if (!confirm('Làm lại bài này? Kết quả cũ sẽ được thay bằng kết quả mới sau khi nộp lại.')) return;
-  var assignmentId = currentComprehensionAssignment.id;
-  supabaseClient.from('sp_comprehension_submissions').delete().eq('assignment_id', assignmentId).eq('student_id', currentStudent.id)
-    .then(function(res) {
-      if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
-      document.getElementById('comprehensionResultBox').classList.add('hidden');
-      document.getElementById('comprehensionResultBox').innerHTML = '';
-      var btn = document.getElementById('submitComprehensionBtn');
-      btn.classList.remove('hidden');
-      btn.disabled = false;
-      btn.textContent = 'Nộp bài';
-      document.getElementById('comprehensionSectionsBox').classList.remove('hidden');
-      document.getElementById('comprehensionSectionsBox').innerHTML = '<p class="muted">Đang tải câu hỏi...</p>';
-      loadComprehensionQuestions(assignmentId);
-      loadSubmissions();
-      loadAssignments();
-    });
-}
-
 function showComprehensionPastResult(submission) {
+  document.getElementById('comprehensionQuestionsBox').innerHTML = '<p class="muted">Bạn đã làm bài này rồi, đây là kết quả:</p>';
   document.getElementById('submitComprehensionBtn').classList.add('hidden');
-  document.getElementById('comprehensionSectionsBox').classList.add('hidden');
-  document.getElementById('comprehensionSectionsBox').innerHTML = '';
-  document.getElementById('comprehensionResultBox').innerHTML = '<p class="muted">Đang tải kết quả...</p>';
-  document.getElementById('comprehensionResultBox').classList.remove('hidden');
 
-  loadComprehensionQuestions(currentComprehensionAssignment.id, function() {
-    showComprehensionResult(submission.total_score, submission.max_score, submission.results || [], submission.reading_scores || []);
-  });
+  loadComprehensionQuestions(currentComprehensionAssignment.id);
+  setTimeout(function() {
+    showComprehensionResult(submission.total_score, submission.max_score, submission.results || []);
+  }, 600); // đợi câu hỏi tải xong để hiện đúng nội dung câu hỏi kèm kết quả
 }
 
 function statusBadge(status) {
