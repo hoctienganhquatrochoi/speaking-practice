@@ -684,11 +684,7 @@ function renderAssignmentPreview() {
   audioSubmitBlock.classList.remove('hidden');
   comprehensionBlock.classList.add('hidden');
 
-  if (chosen && chosen.id) {
-    checkAssignmentLockedState(chosen.id);
-  } else {
-    setAudioSubmitLocked(false);
-  }
+  setAudioSubmitLocked(false);
 
   if (chosen && chosen.reference_image_url) {
     document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
@@ -934,55 +930,16 @@ function submitVideo() {
     return;
   }
   var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
-
-  if (assignmentId) {
-    checkSubmissionAttemptAllowed(assignmentId, function (allowed) {
-      if (allowed) { proceedSubmitVideo(assignmentId); }
-      else { showToast('Bài này chỉ được nộp 1 lần thôi nhé, em đã nộp rồi. Nhớ ghi âm lại thử vài lần trước khi nộp chính thức để yên tâm hơn!'); }
-    });
-  } else {
-    proceedSubmitVideo(assignmentId);
-  }
+  proceedSubmitVideo(assignmentId);
 }
 
 function setAudioSubmitLocked(locked) {
-  document.getElementById('audioSubmitLockedMsg').classList.toggle('hidden', !locked);
-  document.getElementById('recordBlock').classList.toggle('hidden', locked);
-  document.getElementById('audioSubmitAltBlock').classList.toggle('hidden', locked);
-  document.getElementById('submitBtn').classList.toggle('hidden', locked);
+  document.getElementById('audioSubmitLockedMsg').style.display = locked ? 'block' : 'none';
+  document.getElementById('recordBlock').style.display = locked ? 'none' : 'block';
+  document.getElementById('audioSubmitAltBlock').style.display = locked ? 'none' : 'block';
+  document.getElementById('submitBtn').style.display = locked ? 'none' : 'block';
 }
 
-var MAX_SUBMISSION_ATTEMPTS = 1; // chi cho nop dung 1 lan, khong cho lam lai
-var lockCheckToken = 0; // tranh ket qua kiem tra cu ve tre lam sai ket qua moi
-
-function checkAssignmentLockedState(assignmentId) {
-  var myToken = ++lockCheckToken;
-  supabaseClient.from('sp_submission_attempts').select('attempt_count')
-    .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle()
-    .then(function (res) {
-      if (myToken !== lockCheckToken) return; // co lan kiem tra khac moi hon da chay, bo qua ket qua cu nay
-      var current = (res.data && res.data.attempt_count) || 0;
-      setAudioSubmitLocked(current >= MAX_SUBMISSION_ATTEMPTS);
-    });
-}
-
-function checkSubmissionAttemptAllowed(assignmentId, callback) {
-  supabaseClient.from('sp_submission_attempts').select('attempt_count')
-    .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle()
-    .then(function (res) {
-      var current = (res.data && res.data.attempt_count) || 0;
-      if (current >= MAX_SUBMISSION_ATTEMPTS) { callback(false); return; }
-      supabaseClient.from('sp_submission_attempts').upsert({
-        student_id: currentStudent.id,
-        assignment_id: assignmentId,
-        attempt_count: current + 1,
-        updated_at: new Date().toISOString()
-      }).then(function (upsertRes) {
-        if (upsertRes.error) { showToast('Lỗi kiểm tra lượt nộp: ' + upsertRes.error.message); callback(false); return; }
-        callback(true);
-      });
-    });
-}
 
 function proceedSubmitVideo(assignmentId) {
   var practiceType = useFreeMode ? document.getElementById('freePracticeType').value : null;
