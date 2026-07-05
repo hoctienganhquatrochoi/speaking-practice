@@ -239,6 +239,7 @@
         <input type="file" id="audioFileInput" accept="audio/*" onchange="onFileSelected()">
       </div>
 
+      <div id="submitAlertBox" class="hidden" style="background:#fff;color:#111;padding:12px 14px;border-radius:8px;margin-bottom:12px;font-weight:600;text-align:center;"></div>
       <button class="btn-primary" id="submitBtn" style="width:100%;margin-top:16px;" onclick="submitVideo()" disabled>Nộp bài</button>
       <p class="muted" id="uploadStatus" style="margin-top:10px;"></p>
     </div>
@@ -541,6 +542,7 @@ function clearAssignmentPreview() {
   document.getElementById('readingTextPreview').classList.add('hidden');
   document.getElementById('comprehensionQuizBlock').classList.add('hidden');
   document.getElementById('audioSubmitBlock').classList.remove('hidden');
+  document.getElementById('submitAlertBox').classList.add('hidden');
 }
 
 function renderAssignmentPreview() {
@@ -550,6 +552,8 @@ function renderAssignmentPreview() {
   var readingBlock = document.getElementById('readingTextPreview');
   var audioSubmitBlock = document.getElementById('audioSubmitBlock');
   var comprehensionBlock = document.getElementById('comprehensionQuizBlock');
+
+  document.getElementById('submitAlertBox').classList.add('hidden');
 
   var chosen = null;
   for (var i = 0; i < currentAssignments.length; i++) {
@@ -815,7 +819,9 @@ function submitVideo() {
   }
   var assignmentId = useFreeMode ? null : (document.getElementById('assignmentSelect').value || null);
   if (assignmentId && submittedAssignmentIds[assignmentId]) {
-    showToast('Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được. Nếu muốn làm lại, vào "Bài đã nộp" xóa bài cũ trước.');
+    var alertBox = document.getElementById('submitAlertBox');
+    alertBox.textContent = '⚠️ Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được. Muốn làm lại, vào "Bài đã nộp" xóa bài cũ trước.';
+    alertBox.classList.remove('hidden');
     return;
   }
   var practiceType = useFreeMode ? document.getElementById('freePracticeType').value : null;
@@ -968,10 +974,11 @@ function renderSubmissions(list) {
     else if (sub.practice_type) effectiveType = sub.practice_type;
     var isIeltsSub = effectiveType.indexOf('ielts') === 0;
 
+    var deleteBtnHtml = sub.assignment_id ? '' : '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button>';
     html += '<div class="sub-item" onclick="toggleDetail(' + i + ')">';
     html += '<div class="sub-item-header">';
     html += '<div><b>' + dateStr + '</b></div>';
-    html += '<div class="row" style="gap:8px;">' + statusBadge(sub.status) + '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button></div>';
+    html += '<div class="row" style="gap:8px;">' + statusBadge(sub.status) + deleteBtnHtml + '</div>';
     html += '</div>';
 
     if (sub.status === 'graded' && score) {
