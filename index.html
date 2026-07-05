@@ -685,7 +685,7 @@ function renderAssignmentPreview() {
   comprehensionBlock.classList.add('hidden');
 
   if (chosen && chosen.id) {
-    setAudioSubmitLocked(!!submittedAssignmentIds[chosen.id]);
+    checkAssignmentLockedState(chosen.id);
   } else {
     setAudioSubmitLocked(false);
   }
@@ -952,45 +952,36 @@ function setAudioSubmitLocked(locked) {
   document.getElementById('submitBtn').classList.toggle('hidden', locked);
 }
 
+var MAX_SUBMISSION_ATTEMPTS = 1; // chi cho nop dung 1 lan, khong cho lam lai
+var lockCheckToken = 0; // tranh ket qua kiem tra cu ve tre lam sai ket qua moi
+
 function checkAssignmentLockedState(assignmentId) {
-  Promise.all([
-    supabaseClient.from('sp_submission_attempts').select('attempt_count')
-      .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle(),
-    supabaseClient.from('sp_submissions').select('id')
-      .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).limit(1)
-  ]).then(function (results) {
-    var attemptRes = results[0];
-    var subRes = results[1];
-    var current = (attemptRes.data && attemptRes.data.attempt_count) || 0;
-    var hasExistingSubmission = !!(subRes.data && subRes.data.length > 0);
-    setAudioSubmitLocked(current >= MAX_SUBMISSION_ATTEMPTS || hasExistingSubmission);
-  });
+  var myToken = ++lockCheckToken;
+  supabaseClient.from('sp_submission_attempts').select('attempt_count')
+    .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle()
+    .then(function (res) {
+      if (myToken !== lockCheckToken) return; // co lan kiem tra khac moi hon da chay, bo qua ket qua cu nay
+      var current = (res.data && res.data.attempt_count) || 0;
+      setAudioSubmitLocked(current >= MAX_SUBMISSION_ATTEMPTS);
+    });
 }
 
-var MAX_SUBMISSION_ATTEMPTS = 1; // chi cho nop dung 1 lan, khong cho lam lai
-
 function checkSubmissionAttemptAllowed(assignmentId, callback) {
-  Promise.all([
-    supabaseClient.from('sp_submission_attempts').select('attempt_count')
-      .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle(),
-    supabaseClient.from('sp_submissions').select('id')
-      .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).limit(1)
-  ]).then(function (results) {
-    var attemptRes = results[0];
-    var subRes = results[1];
-    var current = (attemptRes.data && attemptRes.data.attempt_count) || 0;
-    var hasExistingSubmission = !!(subRes.data && subRes.data.length > 0);
-    if (current >= MAX_SUBMISSION_ATTEMPTS || hasExistingSubmission) { callback(false); return; }
-    supabaseClient.from('sp_submission_attempts').upsert({
-      student_id: currentStudent.id,
-      assignment_id: assignmentId,
-      attempt_count: current + 1,
-      updated_at: new Date().toISOString()
-    }).then(function (upsertRes) {
-      if (upsertRes.error) { showToast('Lỗi kiểm tra lượt nộp: ' + upsertRes.error.message); callback(false); return; }
-      callback(true);
+  supabaseClient.from('sp_submission_attempts').select('attempt_count')
+    .eq('student_id', currentStudent.id).eq('assignment_id', assignmentId).maybeSingle()
+    .then(function (res) {
+      var current = (res.data && res.data.attempt_count) || 0;
+      if (current >= MAX_SUBMISSION_ATTEMPTS) { callback(false); return; }
+      supabaseClient.from('sp_submission_attempts').upsert({
+        student_id: currentStudent.id,
+        assignment_id: assignmentId,
+        attempt_count: current + 1,
+        updated_at: new Date().toISOString()
+      }).then(function (upsertRes) {
+        if (upsertRes.error) { showToast('Lỗi kiểm tra lượt nộp: ' + upsertRes.error.message); callback(false); return; }
+        callback(true);
+      });
     });
-  });
 }
 
 function proceedSubmitVideo(assignmentId) {
@@ -1086,12 +1077,10 @@ function loadSubmissions() {
     .order('submitted_at', { ascending: false });
   var comprehensionQuery = supabaseClient.from('sp_comprehension_submissions').select('*, sp_assignments(topic, type)').eq('student_id', currentStudent.id)
     .order('submitted_at', { ascending: false });
-  var attemptsQuery = supabaseClient.from('sp_submission_attempts').select('assignment_id, attempt_count').eq('student_id', currentStudent.id);
 
-  Promise.all([audioQuery, comprehensionQuery, attemptsQuery]).then(function(resArr) {
+  Promise.all([audioQuery, comprehensionQuery]).then(function(resArr) {
     var res = resArr[0];
     var compRes = resArr[1];
-    var attemptsRes = resArr[2];
     if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
 
     var audioList = (res.data || []).map(function(s) { s._kind = 'audio'; return s; });
@@ -1106,16 +1095,6 @@ function loadSubmissions() {
     submittedAssignmentIds = {};
     for (var i = 0; i < merged.length; i++) {
       if (merged[i].assignment_id) submittedAssignmentIds[merged[i].assignment_id] = true;
-    }
-    // Gop them du lieu "da het luot nop" (VD bai test cu bi xoa nhung da tinh luot) vao CHUNG
-    // 1 nguon duy nhat, de moi noi kiem tra khoa mic deu nhat quan, khong lech nhau nua
-    if (!attemptsRes.error) {
-      var attemptRows = attemptsRes.data || [];
-      for (var k = 0; k < attemptRows.length; k++) {
-        if (attemptRows[k].attempt_count >= MAX_SUBMISSION_ATTEMPTS) {
-          submittedAssignmentIds[attemptRows[k].assignment_id] = true;
-        }
-      }
     }
     renderAssignmentDropdown(); // luôn vẽ lại, tránh lỡ nhịp khi 2 lượt tải chạy song song
   });
