@@ -561,6 +561,7 @@ function renderAssignmentPreview() {
   }
 
   var isComprehension = chosen && (chosen.type === 'listening' || chosen.type === 'reading_comprehension');
+  var alreadySubmitted = chosen && submittedAssignmentIds[chosen.id];
 
   if (chosen && chosen.description) {
     document.getElementById('assignmentDescriptionPreviewContent').textContent = chosen.description;
@@ -579,8 +580,17 @@ function renderAssignmentPreview() {
     return;
   }
 
-  audioSubmitBlock.classList.remove('hidden');
   comprehensionBlock.classList.add('hidden');
+
+  if (alreadySubmitted) {
+    // Đã nộp rồi -> báo ngay, không cho ghi âm mất công vô ích
+    audioSubmitBlock.classList.add('hidden');
+    var alertBox = document.getElementById('submitAlertBox');
+    alertBox.textContent = '⚠️ Bài này đã nộp rồi (đang chấm hoặc đã có điểm), không nộp lại được.';
+    alertBox.classList.remove('hidden');
+  } else {
+    audioSubmitBlock.classList.remove('hidden');
+  }
 
   if (chosen && chosen.reference_image_url) {
     document.getElementById('assignmentImagePreviewImg').src = chosen.reference_image_url;
