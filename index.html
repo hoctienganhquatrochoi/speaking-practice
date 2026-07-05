@@ -1086,10 +1086,12 @@ function loadSubmissions() {
     .order('submitted_at', { ascending: false });
   var comprehensionQuery = supabaseClient.from('sp_comprehension_submissions').select('*, sp_assignments(topic, type)').eq('student_id', currentStudent.id)
     .order('submitted_at', { ascending: false });
+  var attemptsQuery = supabaseClient.from('sp_submission_attempts').select('assignment_id, attempt_count').eq('student_id', currentStudent.id);
 
-  Promise.all([audioQuery, comprehensionQuery]).then(function(resArr) {
+  Promise.all([audioQuery, comprehensionQuery, attemptsQuery]).then(function(resArr) {
     var res = resArr[0];
     var compRes = resArr[1];
+    var attemptsRes = resArr[2];
     if (res.error) { showToast('Lỗi tải danh sách: ' + res.error.message); return; }
 
     var audioList = (res.data || []).map(function(s) { s._kind = 'audio'; return s; });
@@ -1104,6 +1106,16 @@ function loadSubmissions() {
     submittedAssignmentIds = {};
     for (var i = 0; i < merged.length; i++) {
       if (merged[i].assignment_id) submittedAssignmentIds[merged[i].assignment_id] = true;
+    }
+    // Gop them du lieu "da het luot nop" (VD bai test cu bi xoa nhung da tinh luot) vao CHUNG
+    // 1 nguon duy nhat, de moi noi kiem tra khoa mic deu nhat quan, khong lech nhau nua
+    if (!attemptsRes.error) {
+      var attemptRows = attemptsRes.data || [];
+      for (var k = 0; k < attemptRows.length; k++) {
+        if (attemptRows[k].attempt_count >= MAX_SUBMISSION_ATTEMPTS) {
+          submittedAssignmentIds[attemptRows[k].assignment_id] = true;
+        }
+      }
     }
     renderAssignmentDropdown(); // luôn vẽ lại, tránh lỡ nhịp khi 2 lượt tải chạy song song
   });
