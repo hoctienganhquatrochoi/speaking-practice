@@ -662,7 +662,7 @@ function renderAssignmentPreview() {
     if (currentAssignments[i].id === assignmentId) { chosen = currentAssignments[i]; break; }
   }
 
-  var isComprehension = chosen && (chosen.type === 'listening' || chosen.type === 'reading_comprehension');
+  var isComprehension = false; // da tat tinh nang Doc hieu/Nghe hieu, quay ve dung ban don gian
 
   if (chosen && chosen.description) {
     document.getElementById('assignmentDescriptionPreviewContent').textContent = chosen.description;
