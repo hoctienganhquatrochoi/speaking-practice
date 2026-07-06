@@ -1087,7 +1087,18 @@ function loadClassesForAssignments() {
     });
 }
 
+function prefillTopicWithDate() {
+  var topicInput = document.getElementById('newAssignmentTopic');
+  if (topicInput.value.trim()) return; // đã có nội dung thì không ghi đè
+  var todayD = new Date();
+  var dd = String(todayD.getDate()).padStart(2, '0');
+  var mm = String(todayD.getMonth() + 1).padStart(2, '0');
+  var yyyy = todayD.getFullYear();
+  topicInput.value = dd + '/' + mm + '/' + yyyy + ' - ';
+}
+
 function onAssignmentAudienceChange() {
+  prefillTopicWithDate();
   var audience = document.getElementById('assignmentAudienceSelect').value;
   var isIelts = audience === 'ielts';
   var isElementary = audience === 'elementary';
@@ -1509,6 +1520,7 @@ function addAssignment() {
   function finishAssignmentCreation() {
     showToast('Đã tạo bài giao cho ' + selectedClassIds.length + ' lớp' + (excludedStudentIds.length > 0 ? ', loại trừ ' + excludedStudentIds.length + ' học sinh' : ''));
     document.getElementById('newAssignmentTopic').value = '';
+    prefillTopicWithDate();
     document.getElementById('newAssignmentDescription').value = '';
     document.getElementById('newAssignmentDueDate').value = '';
     document.getElementById('newAssignmentReadingText').value = '';
