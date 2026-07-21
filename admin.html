@@ -310,7 +310,7 @@
         </optgroup>
       </select>
       <div id="readingTextBlock" class="hidden">
-        <label>Nội dung bài đọc mẫu (bắt buộc cho loại này — dán nguyên văn để Gemini đối chiếu)</label>
+        <label>Nội dung bài đọc mẫu (tùy chọn nếu đã đính ảnh bài đọc bên dưới — dán nguyên văn để Gemini đối chiếu)</label>
         <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
       </div>
       <div id="questionsTextBlock" class="hidden">
@@ -1272,7 +1272,7 @@ function addAssignment() {
 
   if (selectedClassIds.length === 0) { showToast('Chưa tick lớp nào để giao bài'); return; }
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
-  if (type === 'reading' && !readingText) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu'); return; }
+  if (type === 'reading' && !readingText && !selectedAssignmentImage) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu HOẶC đính kèm ảnh'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
 
   function insertExclusionsThenFinish(assignmentId) {
