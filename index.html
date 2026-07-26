@@ -607,6 +607,10 @@ function renderAssignmentPreview() {
     document.getElementById('readingTextPreviewLabel').textContent = 'Trả lời lần lượt các câu hỏi sau (ghi âm liên tục):';
     document.getElementById('readingTextPreviewContent').textContent = chosen.questions_text;
     readingBlock.classList.remove('hidden');
+  } else if (chosen && chosen.type === 'translation' && chosen.translation_vietnamese) {
+    document.getElementById('readingTextPreviewLabel').textContent = 'Nhìn các câu tiếng Việt sau, dịch nói sang tiếng Anh lần lượt (ghi âm liên tục):';
+    document.getElementById('readingTextPreviewContent').textContent = chosen.translation_vietnamese;
+    readingBlock.classList.remove('hidden');
   } else {
     readingBlock.classList.add('hidden');
   }
