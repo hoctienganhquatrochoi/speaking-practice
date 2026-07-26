@@ -302,6 +302,7 @@
           <option value="presentation">Thuyết trình / nói câu hoàn chỉnh (chấm đủ: nội dung, từ vựng, ngữ pháp, phát âm, tự tin)</option>
           <option value="vocabulary">Đọc từ vựng / từ đơn (chỉ chấm: từ vựng đúng, phát âm)</option>
           <option value="reading">Luyện đọc theo bài mẫu (chấm: đọc đúng bài, phát âm, trôi chảy)</option>
+          <option value="translation">Dịch sang tiếng Anh (học sinh nghe câu tiếng Việt, dịch nói tiếng Anh)</option>
         </optgroup>
         <optgroup label="" id="optgroupIelts">
           <option value="ielts_part1">IELTS Part 1 — Hỏi đáp cá nhân</option>
@@ -312,6 +313,11 @@
       <div id="readingTextBlock" class="hidden">
         <label>Nội dung bài đọc mẫu (tùy chọn nếu đã đính ảnh bài đọc bên dưới — dán nguyên văn để Gemini đối chiếu)</label>
         <textarea id="newAssignmentReadingText" rows="4" placeholder="Dán nguyên văn đoạn văn/mẫu câu học sinh cần đọc..."></textarea>
+      </div>
+      <div id="translationTextBlock" class="hidden">
+        <label>Danh sách câu dịch (mỗi dòng 1 cặp, đúng định dạng: Câu tiếng Việt - Câu tiếng Anh đúng)</label>
+        <textarea id="newAssignmentTranslationText" rows="6" placeholder="Con mèo đang ngủ. - The cat is sleeping.&#10;Tôi thích ăn táo. - I like eating apples."></textarea>
+        <p class="muted" style="margin-top:6px;">Câu tiếng Việt sẽ hiện cho học sinh xem, câu tiếng Anh giấu đi để AI chấm.</p>
       </div>
       <div id="questionsTextBlock" class="hidden">
         <label>Danh sách câu hỏi (mỗi câu 1 dòng — học sinh sẽ đọc và trả lời lần lượt trong 1 lần ghi âm)</label>
@@ -1166,11 +1172,13 @@ function onAssignmentTypeChange() {
   var type = document.getElementById('newAssignmentType').value;
   var readingBlock = document.getElementById('readingTextBlock');
   var questionsBlock = document.getElementById('questionsTextBlock');
+  var translationBlock = document.getElementById('translationTextBlock');
   var topicHint = document.getElementById('topicHintText');
   var descHint = document.getElementById('descriptionHintText');
 
   readingBlock.classList.toggle('hidden', type !== 'reading');
   questionsBlock.classList.toggle('hidden', type !== 'ielts_part1' && type !== 'ielts_part3');
+  translationBlock.classList.toggle('hidden', type !== 'translation');
 
   if (type === 'ielts_part2') {
     topicHint.textContent = '(VD: Describe a memorable trip you have taken)';
@@ -1178,6 +1186,9 @@ function onAssignmentTypeChange() {
   } else if (type === 'ielts_part1' || type === 'ielts_part3') {
     topicHint.textContent = '(VD: Hobbies and Free Time)';
     descHint.textContent = '(tùy chọn, ghi chú thêm bối cảnh nếu cần)';
+  } else if (type === 'translation') {
+    topicHint.textContent = '(VD: Ôn tập Unit 5 - Dịch câu)';
+    descHint.textContent = '(tùy chọn)';
   } else {
     topicHint.textContent = '(VD: So sánh 2 bức tranh Unit 2 - Playtime)';
     descHint.textContent = '(tùy chọn)';
@@ -1261,6 +1272,25 @@ function addAssignment() {
   var type = document.getElementById('newAssignmentType').value;
   var readingText = document.getElementById('newAssignmentReadingText').value.trim();
   var questionsText = document.getElementById('newAssignmentQuestionsText').value.trim();
+  var translationRaw = document.getElementById('newAssignmentTranslationText').value.trim();
+
+  var translationVietnamese = null;
+  var translationEnglish = null;
+  if (type === 'translation' && translationRaw) {
+    var lines = translationRaw.split('\n');
+    var viLines = [];
+    var enLines = [];
+    for (var t = 0; t < lines.length; t++) {
+      var line = lines[t].trim();
+      if (!line) continue;
+      var sepIndex = line.indexOf(' - ');
+      if (sepIndex === -1) continue; // dòng không đúng định dạng, bỏ qua
+      viLines.push(line.substring(0, sepIndex).trim());
+      enLines.push(line.substring(sepIndex + 3).trim());
+    }
+    translationVietnamese = viLines.join('\n');
+    translationEnglish = enLines.join('\n');
+  }
 
   var checkboxes = document.querySelectorAll('.assignment-class-checkbox:checked');
   var selectedClassIds = [];
@@ -1274,6 +1304,7 @@ function addAssignment() {
   if (!topic) { showToast('Nhập chủ đề bài giao'); return; }
   if (type === 'reading' && !readingText && !selectedAssignmentImage) { showToast('Loại "Luyện đọc" cần nhập nội dung bài đọc mẫu HOẶC đính kèm ảnh'); return; }
   if ((type === 'ielts_part1' || type === 'ielts_part3') && !questionsText) { showToast('Cần nhập danh sách câu hỏi'); return; }
+  if (type === 'translation' && (!translationVietnamese || !translationEnglish)) { showToast('Cần nhập ít nhất 1 cặp câu đúng định dạng "Câu Việt - Câu Anh"'); return; }
 
   function insertExclusionsThenFinish(assignmentId) {
     if (excludedStudentIds.length === 0) { finishAssignmentCreation(); return; }
@@ -1296,6 +1327,7 @@ function addAssignment() {
     document.getElementById('newAssignmentDueDate').value = '';
     document.getElementById('newAssignmentReadingText').value = '';
     document.getElementById('newAssignmentQuestionsText').value = '';
+    document.getElementById('newAssignmentTranslationText').value = '';
     setAssignmentImageFile(null);
     document.getElementById('assignmentImageInput').value = '';
     var checkedBoxes = document.querySelectorAll('.assignment-class-checkbox');
@@ -1314,7 +1346,9 @@ function addAssignment() {
       reference_image_url: imageUrl || null,
       type: type,
       reading_text: type === 'reading' ? readingText : null,
-      questions_text: (type === 'ielts_part1' || type === 'ielts_part3') ? questionsText : null
+      questions_text: (type === 'ielts_part1' || type === 'ielts_part3') ? questionsText : null,
+      translation_vietnamese: translationVietnamese,
+      translation_english: translationEnglish
     }).select().single().then(function(res) {
       if (res.error) { showToast('Lỗi: ' + res.error.message); return; }
       var assignmentId = res.data.id;
@@ -1378,6 +1412,7 @@ function loadAssignmentsForAudience(audience) {
 function assignmentTypeLabel(type) {
   if (type === 'vocabulary') return 'Đọc từ vựng';
   if (type === 'reading') return 'Luyện đọc';
+  if (type === 'translation') return 'Dịch sang tiếng Anh';
   if (type === 'ielts_part1') return 'IELTS Part 1';
   if (type === 'ielts_part2') return 'IELTS Part 2';
   if (type === 'ielts_part3') return 'IELTS Part 3';
@@ -1410,6 +1445,15 @@ function renderAssignmentsList() {
     if (a.description) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">' + escapeHtml(a.description) + '</div>';
     if (a.grading_criteria) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">🎯 Tiêu chí chấm: ' + escapeHtml(a.grading_criteria) + '</div>';
     if (a.reading_text) html += '<div class="muted" style="margin-top:6px;font-style:italic;white-space:pre-wrap;">Bài đọc mẫu:\n"' + escapeHtml(a.reading_text) + '"</div>';
+    if (a.translation_vietnamese && a.translation_english) {
+      var viLines2 = a.translation_vietnamese.split('\n');
+      var enLines2 = a.translation_english.split('\n');
+      var pairsPreview = '';
+      for (var pv = 0; pv < viLines2.length; pv++) {
+        pairsPreview += (viLines2[pv] || '') + ' → ' + (enLines2[pv] || '') + '\n';
+      }
+      html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu dịch (Việt → Anh):\n' + escapeHtml(pairsPreview.trim()) + '</div>';
+    }
     if (a.questions_text) html += '<div class="muted" style="margin-top:6px;white-space:pre-wrap;">Câu hỏi:\n' + escapeHtml(a.questions_text) + '</div>';
     html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="openEditExclusionsModal(\'' + a.id + '\')">✏️ Sửa danh sách loại trừ</button>';
     html += '</div>';
