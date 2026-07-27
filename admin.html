@@ -1757,7 +1757,10 @@ function retryStuckGradings() {
       html += '<div style="margin-top:10px;font-size:13px;">';
       for (var i = 0; i < payload.results.length; i++) {
         var r = payload.results[i];
-        html += '<div class="muted" style="margin-top:4px;">ID ' + r.id + ' → HTTP ' + (r.http_status || 'lỗi') + '</div>';
+        var itemErrorMsg = '';
+        if (r.data && typeof r.data === 'object' && r.data.error) itemErrorMsg = r.data.error;
+        else if (typeof r.data === 'string') itemErrorMsg = r.data;
+        html += '<div class="muted" style="margin-top:4px;">ID ' + r.id + ' → HTTP ' + (r.http_status || 'lỗi') + (itemErrorMsg ? ' — ' + escapeHtml(itemErrorMsg) : '') + '</div>';
       }
       html += '</div>';
     }
