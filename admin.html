@@ -1728,6 +1728,20 @@ function retryStuckGradings() {
     btn.disabled = false;
     btn.textContent = 'Chấm lại ngay';
     if (res.error) {
+      // res.error thường chỉ có message chung chung, nội dung lỗi thật nằm trong res.error.context (Response gốc)
+      if (res.error.context && typeof res.error.context.json === 'function') {
+        res.error.context.json().then(function(errBody) {
+          var msg = (errBody && errBody.error) || res.error.message || 'Không rõ lỗi';
+          var html = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(msg) + '</p>';
+          if (errBody && errBody.debugSteps) {
+            html += '<pre style="white-space:pre-wrap;font-size:12px;margin-top:8px;">' + escapeHtml(errBody.debugSteps.join('\n')) + '</pre>';
+          }
+          box.innerHTML = html;
+        }).catch(function() {
+          box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
+        });
+        return;
+      }
       box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
       return;
     }
