@@ -379,6 +379,13 @@
       </div>
       <div id="weeklyReportBox" style="margin-top:14px;"></div>
     </div>
+
+    <div class="card">
+      <h2>🔄 Chấm lại bài bị kẹt</h2>
+      <p class="muted">Dùng khi có bài báo "Đang chấm" mãi không xong (thường do hết hạn mức Gemini tạm thời). Bấm để quét và chấm lại toàn bộ bài bị kẹt trên 3 phút.</p>
+      <button class="btn-primary" id="retryStuckBtn" onclick="retryStuckGradings()">Chấm lại ngay</button>
+      <div id="retryStuckResultBox" style="margin-top:14px;"></div>
+    </div>
   </div>
 </div>
 
@@ -1708,6 +1715,45 @@ function renderAnalysisResult(box, data) {
   }
 
   box.innerHTML = html;
+}
+
+function retryStuckGradings() {
+  var btn = document.getElementById('retryStuckBtn');
+  var box = document.getElementById('retryStuckResultBox');
+  btn.disabled = true;
+  btn.textContent = 'Đang quét và chấm lại (có thể mất vài phút nếu nhiều bài)...';
+  box.innerHTML = '<p class="muted">Đang xử lý...</p>';
+
+  supabaseClient.functions.invoke('retry-stuck-gradings', { body: {} }).then(function(res) {
+    btn.disabled = false;
+    btn.textContent = 'Chấm lại ngay';
+    if (res.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
+      return;
+    }
+    var payload = res.data;
+    if (!payload || payload.error) {
+      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
+      if (payload && payload.debugSteps) {
+        box.innerHTML += '<pre style="white-space:pre-wrap;font-size:12px;margin-top:8px;">' + escapeHtml(payload.debugSteps.join('\n')) + '</pre>';
+      }
+      return;
+    }
+    var html = '<p>Đã quét được <b>' + payload.retried + '</b> bài bị kẹt.</p>';
+    if (payload.results && payload.results.length > 0) {
+      html += '<div style="margin-top:10px;font-size:13px;">';
+      for (var i = 0; i < payload.results.length; i++) {
+        var r = payload.results[i];
+        html += '<div class="muted" style="margin-top:4px;">ID ' + r.id + ' → HTTP ' + (r.http_status || 'lỗi') + '</div>';
+      }
+      html += '</div>';
+    }
+    box.innerHTML = html;
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Chấm lại ngay';
+    box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(String(err)) + '</p>';
+  });
 }
 
 function downloadAdminImage(url, filenameBase) {
