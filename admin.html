@@ -1724,33 +1724,32 @@ function retryStuckGradings() {
   btn.textContent = 'Đang quét và chấm lại (có thể mất vài phút nếu nhiều bài)...';
   box.innerHTML = '<p class="muted">Đang xử lý...</p>';
 
-  supabaseClient.functions.invoke('retry-stuck-gradings', { body: {} }).then(function(res) {
+  fetch(SUPABASE_URL_FIXED + '/functions/v1/retry-stuck-gradings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY_FIXED,
+      'apikey': SUPABASE_ANON_KEY_FIXED
+    },
+    body: JSON.stringify({})
+  }).then(function(httpRes) {
+    return httpRes.text().then(function(rawText) {
+      var payload;
+      try { payload = JSON.parse(rawText); } catch (e) { payload = null; }
+      return { httpStatus: httpRes.status, payload: payload, rawText: rawText };
+    });
+  }).then(function(result) {
     btn.disabled = false;
     btn.textContent = 'Chấm lại ngay';
-    if (res.error) {
-      // res.error thường chỉ có message chung chung, nội dung lỗi thật nằm trong res.error.context (Response gốc)
-      if (res.error.context && typeof res.error.context.json === 'function') {
-        res.error.context.json().then(function(errBody) {
-          var msg = (errBody && errBody.error) || res.error.message || 'Không rõ lỗi';
-          var html = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(msg) + '</p>';
-          if (errBody && errBody.debugSteps) {
-            html += '<pre style="white-space:pre-wrap;font-size:12px;margin-top:8px;">' + escapeHtml(errBody.debugSteps.join('\n')) + '</pre>';
-          }
-          box.innerHTML = html;
-        }).catch(function() {
-          box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
-        });
-        return;
-      }
-      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml(res.error.message || String(res.error)) + '</p>';
-      return;
-    }
-    var payload = res.data;
-    if (!payload || payload.error) {
-      box.innerHTML = '<p style="color:#ff9db0;">Lỗi: ' + escapeHtml((payload && payload.error) || 'Không rõ lỗi') + '</p>';
+    var payload = result.payload;
+
+    if (result.httpStatus >= 400 || !payload || payload.error) {
+      var msg = (payload && payload.error) || result.rawText || ('HTTP ' + result.httpStatus);
+      var html = '<p style="color:#ff9db0;">Lỗi (HTTP ' + result.httpStatus + '): ' + escapeHtml(msg) + '</p>';
       if (payload && payload.debugSteps) {
-        box.innerHTML += '<pre style="white-space:pre-wrap;font-size:12px;margin-top:8px;">' + escapeHtml(payload.debugSteps.join('\n')) + '</pre>';
+        html += '<pre style="white-space:pre-wrap;font-size:12px;margin-top:8px;">' + escapeHtml(payload.debugSteps.join('\n')) + '</pre>';
       }
+      box.innerHTML = html;
       return;
     }
     var html = '<p>Đã quét được <b>' + payload.retried + '</b> bài bị kẹt.</p>';
