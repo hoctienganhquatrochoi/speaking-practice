@@ -1648,8 +1648,12 @@ function renderStudentResults(list) {
       html += '<div class="muted" style="margin-top:8px;">' + escapeHtml((score && score.invalid_reason) || 'Bài không hợp lệ') + '</div>';
     } else if (sub.status === 'processing') {
       html += '<div class="muted" style="margin-top:8px;">Đang chấm...</div>';
+      html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="retryOneSubmission(\'' + sub.id + '\', this)">🔄 Chấm lại bài này</button>';
+      html += '<div id="retryOneResult_' + sub.id + '" class="hidden muted" style="margin-top:8px;"></div>';
     } else {
       html += '<div class="muted" style="margin-top:8px;">Có lỗi khi chấm bài này</div>';
+      html += '<button class="btn-secondary btn-sm" style="margin-top:8px;" onclick="retryOneSubmission(\'' + sub.id + '\', this)">🔄 Chấm lại bài này</button>';
+      html += '<div id="retryOneResult_' + sub.id + '" class="hidden muted" style="margin-top:8px;"></div>';
     }
 
     if (sub.video_url) {
@@ -1715,6 +1719,53 @@ function renderAnalysisResult(box, data) {
   }
 
   box.innerHTML = html;
+}
+
+function retryOneSubmission(submissionId, btn) {
+  var resultBox = document.getElementById('retryOneResult_' + submissionId);
+  btn.disabled = true;
+  btn.textContent = 'Đang chấm lại...';
+  resultBox.classList.remove('hidden');
+  resultBox.textContent = 'Đang gửi lại cho Gemini, đợi khoảng 30-60 giây...';
+
+  supabaseClient.from('sp_submissions').select('*').eq('id', submissionId).single().then(function(subRes) {
+    if (subRes.error || !subRes.data) {
+      resultBox.textContent = 'Lỗi: không tìm thấy bài nộp';
+      btn.disabled = false;
+      btn.textContent = '🔄 Chấm lại bài này';
+      return;
+    }
+    fetch(SUPABASE_URL_FIXED + '/functions/v1/grade-submission', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY_FIXED,
+        'apikey': SUPABASE_ANON_KEY_FIXED
+      },
+      body: JSON.stringify({ record: subRes.data })
+    }).then(function(httpRes) {
+      return httpRes.text().then(function(rawText) {
+        var payload;
+        try { payload = JSON.parse(rawText); } catch (e) { payload = null; }
+        return { httpStatus: httpRes.status, payload: payload, rawText: rawText };
+      });
+    }).then(function(result) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Chấm lại bài này';
+      if (result.httpStatus >= 400 || !result.payload || result.payload.error) {
+        var msg = (result.payload && result.payload.error) || result.rawText || ('HTTP ' + result.httpStatus);
+        resultBox.textContent = 'Lỗi: ' + msg;
+        return;
+      }
+      resultBox.textContent = 'Đã chấm xong! Bấm lại "Chọn học sinh" hoặc tải lại trang để xem điểm mới.';
+      var audience = document.getElementById('resultsStudentSelect');
+      if (audience) loadStudentResults();
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Chấm lại bài này';
+      resultBox.textContent = 'Lỗi: ' + String(err);
+    });
+  });
 }
 
 function retryStuckGradings() {
