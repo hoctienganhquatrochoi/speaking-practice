@@ -312,8 +312,8 @@ function togglePw(inputId, btnId) {
 // =====================================================
 // SETUP / CONNECT (gắn cứng sẵn - học sinh/phụ huynh không cần cấu hình gì)
 // =====================================================
-var SUPABASE_URL_FIXED = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
-var SUPABASE_ANON_KEY_FIXED = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
+var SUPABASE_URL_FIXED = 'https://zxuzzajcpytnqvzqgxsk.supabase.co';
+var SUPABASE_ANON_KEY_FIXED = 'sb_publishable__Fc19LuOPIyBJrHD8aSIXA_B2q1QUy2';
 
 function initApp() {
   connectSupabase(SUPABASE_URL_FIXED, SUPABASE_ANON_KEY_FIXED);
@@ -861,13 +861,28 @@ function submitVideo() {
       practice_type: practiceType,
       reading_text: freeReadingText || null,
       status: 'processing'
-    }).then(function(insertRes) {
+    }).select().single().then(function(insertRes) {
       statusEl.textContent = '';
       btn.disabled = false;
       if (insertRes.error) {
         showToast('Lỗi lưu bài nộp: ' + insertRes.error.message);
         return;
       }
+      // Đánh dấu "đã có người xử lý" trước để Cron (chạy mỗi 1 phút) không lỡ chấm trùng cùng lúc
+      supabaseClient.from('sp_submissions').update({ retry_count: 1 }).eq('id', insertRes.data.id).then(function() {});
+
+      // Gọi chấm điểm NGAY LẬP TỨC (không đợi hệ thống tự quét mỗi 1 phút)
+      // Nếu lệnh này lỗi/mạng gián đoạn thì cũng không sao, cron mỗi 1 phút sẽ tự bắt lại
+      fetch(SUPABASE_URL_FIXED + '/functions/v1/grade-submission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY_FIXED,
+          'apikey': SUPABASE_ANON_KEY_FIXED
+        },
+        body: JSON.stringify({ record: insertRes.data })
+      }).catch(function() { /* im lặng bỏ qua, để cron xử lý sau */ });
+
       showToast('Đã nộp bài! Đang chấm, bạn có thể quay lại xem sau.');
       resetUploadForm();
       loadSubmissions();
