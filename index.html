@@ -312,8 +312,8 @@ function togglePw(inputId, btnId) {
 // =====================================================
 // SETUP / CONNECT (gắn cứng sẵn - học sinh/phụ huynh không cần cấu hình gì)
 // =====================================================
-var SUPABASE_URL_FIXED = 'https://zeaawmjliuaycaqeseiq.supabase.co';
-var SUPABASE_ANON_KEY_FIXED = 'sb_publishable_itGD-6q_aH37BLqDfQUBCQ_-PjHWCJ_';
+var SUPABASE_URL_FIXED = 'https://zxuzzajcpytnqvzqgxsk.supabase.co';
+var SUPABASE_ANON_KEY_FIXED = 'sb_publishable__Fc19LuOPIyBJrHD8aSIXA_B2q1QUy2';
 
 function initApp() {
   connectSupabase(SUPABASE_URL_FIXED, SUPABASE_ANON_KEY_FIXED);
@@ -955,7 +955,7 @@ function loadSubmissions() {
 
     submittedAssignmentIds = {};
     for (var i = 0; i < list.length; i++) {
-      if (list[i].assignment_id) submittedAssignmentIds[list[i].assignment_id] = true;
+      if (list[i].assignment_id && list[i].status !== 'invalid') submittedAssignmentIds[list[i].assignment_id] = true;
     }
     if (!compRes.error) {
       var compList = compRes.data || [];
@@ -1006,7 +1006,7 @@ function renderSubmissions(list) {
     var isIeltsSub = effectiveType.indexOf('ielts') === 0;
 
     var isExpanded = !!expandedSubmissionIds[sub.id];
-    var deleteBtnHtml = sub.assignment_id ? '' : '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button>';
+    var deleteBtnHtml = (!sub.assignment_id || sub.status === 'invalid') ? '<button class="btn-secondary btn-sm" onclick="event.stopPropagation();deleteSubmission(' + i + ')">Xóa</button>' : '';
     html += '<div class="sub-item" onclick="toggleDetail(\'' + sub.id + '\')">';
     html += '<div class="sub-item-header">';
     html += '<div><b>' + dateStr + '</b></div>';
